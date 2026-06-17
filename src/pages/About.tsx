@@ -5,6 +5,7 @@ import {
   certifications,
   education,
   experience,
+  isAvailable,
   languages,
   profile,
   resumeHighlights,
@@ -65,7 +66,7 @@ export default function About() {
             <span className="dot dot-y" />
             <span className="dot dot-g" />
             <span className="terminal-title">
-              ~/{profile.shortName.toLowerCase()} - zsh
+              ~/{profile.shortName.toLowerCase()} — zsh
             </span>
           </div>
           <div className="terminal-body">
@@ -111,7 +112,7 @@ export default function About() {
             <span className="t-line">
               {"  "}
               <span className="t-key">"available"</span>:{" "}
-              <span className="t-val">true</span>
+              <span className="t-val">{String(isAvailable)}</span>
             </span>
             <span className="t-line">
               <span className="t-com">{"}"}</span>
@@ -119,7 +120,7 @@ export default function About() {
             <span className="t-line">&nbsp;</span>
             <span className="t-line">
               <span className="t-prompt">&gt; </span>
-              <span className="t-cmd">_</span>
+              <span className="cursor" aria-hidden="true" />
             </span>
           </div>
         </Reveal>

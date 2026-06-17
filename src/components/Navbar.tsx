@@ -1,7 +1,7 @@
 import { Menu, X } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { useState } from "react";
-import { profile } from "../lib/content";
+import { isAvailable, profile } from "../lib/content";
 
 const navItems = [
   { label: "Home", to: "/" },
@@ -27,14 +27,24 @@ export default function Navbar() {
           <NavLink
             key={item.to}
             to={item.to}
-            className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+            className={({ isActive }) =>
+              isActive ? "nav-link active" : "nav-link"
+            }
           >
             {item.label}
           </NavLink>
         ))}
-        <NavLink className="nav-cta" to="/contact">
-          Let's talk
-        </NavLink>
+
+        {isAvailable ? (
+          <NavLink className="nav-cta nav-cta--available" to="/contact">
+            <span className="nav-available-dot" aria-hidden="true" />
+            Let's talk
+          </NavLink>
+        ) : (
+          <NavLink className="nav-cta" to="/contact">
+            Let's talk
+          </NavLink>
+        )}
       </nav>
 
       <button

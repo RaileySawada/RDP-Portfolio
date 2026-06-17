@@ -1,17 +1,15 @@
 import {
   ArrowRight,
   Clock,
-  Download,
-  Eye,
-  FileText,
   GitBranch,
   Mail,
   MapPin,
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Reveal from "../components/Reveal";
-import { profile } from "../lib/content";
+import { isAvailable, profile } from "../lib/content";
 
 type ContactMethod = {
   label: string;
@@ -28,12 +26,6 @@ const contactMethods: ContactMethod[] = [
     icon: Mail,
   },
   {
-    label: "Resume",
-    value: "View PDF",
-    href: profile.resumeUrl,
-    icon: FileText,
-  },
-  {
     label: "GitHub",
     value: "github.com/RaileySawada",
     href: profile.links.github,
@@ -47,56 +39,186 @@ const contactMethods: ContactMethod[] = [
   },
 ];
 
+type TerminalEntry = {
+  command?: string;
+  lines: string[];
+};
+
+const initialEntries: TerminalEntry[] = [
+  {
+    lines: [
+      "Resume preview mounted.",
+      'Type "help" to show commands.',
+    ],
+  },
+];
+
 export default function Contact() {
+  const [entries, setEntries] = useState<TerminalEntry[]>(initialEntries);
+  const [input, setInput] = useState("");
+  const commandInputRef = useRef<HTMLInputElement>(null);
+  const terminalEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ block: "end" });
+  }, [entries, input]);
+
+  const openResume = () => {
+    window.open(profile.resumeUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const downloadResume = () => {
+    const anchor = document.createElement("a");
+    anchor.href = profile.resumeUrl;
+    anchor.download = "RaileyDelaPena.pdf";
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+  };
+
+  const runCommand = (rawCommand: string) => {
+    const command = rawCommand.trim().toLowerCase();
+
+    if (!command) return;
+
+    if (command === "clear") {
+      setEntries([]);
+      return;
+    }
+
+    let lines: string[];
+
+    switch (command) {
+      case "help":
+        lines = [
+          "help      show available commands",
+          "view      open resume PDF",
+          "download  download resume PDF",
+          "email     start an email",
+          "github    open GitHub profile",
+          "linkedin  open LinkedIn profile",
+          "clear     clear terminal output",
+        ];
+        break;
+      case "view":
+        openResume();
+        lines = ["Opening resume PDF..."];
+        break;
+      case "download":
+        downloadResume();
+        lines = ["Downloading resume PDF..."];
+        break;
+      case "email":
+        window.location.href = `mailto:${profile.email}`;
+        lines = ["Opening mail client..."];
+        break;
+      case "github":
+        window.open(profile.links.github, "_blank", "noopener,noreferrer");
+        lines = ["Opening GitHub profile..."];
+        break;
+      case "linkedin":
+        window.open(profile.links.linkedin, "_blank", "noopener,noreferrer");
+        lines = ["Opening LinkedIn profile..."];
+        break;
+      default:
+        lines = [`Command not found: ${rawCommand}`, 'Type "help" for options.'];
+    }
+
+    setEntries((currentEntries) => [
+      ...currentEntries,
+      { command: rawCommand, lines },
+    ]);
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    runCommand(input);
+    setInput("");
+  };
+
   return (
     <section className="page-section contact-page">
-      <Reveal className="contact-hero">
-        <div className="section-label">// 04 - contact</div>
-        <h1 className="section-title">
-          Let's build
-          <br />
-          <span>something great</span>
-        </h1>
-        <p>
-          Open to freelance work, collaborations, and interesting problems. Drop
-          a message and I will get back to you.
-        </p>
+      <div className="contact-hero-grid">
+        <Reveal className="contact-hero-copy">
+          <div className="section-label">// 04 - contact</div>
+          <h1 className="section-title">
+            Let's build
+            <br />
+            <span>something great</span>
+          </h1>
+          <p>
+            Open to selected freelance builds, AI-assisted workflows, and
+            thoughtful React or Laravel interfaces. Reach me directly below, or
+            use the terminal to inspect my resume.
+          </p>
+        </Reveal>
 
-        <div className="resume-preview-card compact-resume-preview">
-          <div className="resume-preview-top">
-            <div>
-              <span>Resume preview</span>
-              <strong>Railey Dela Peña</strong>
-            </div>
-
-            <div className="resume-preview-actions">
-              <a href={profile.resumeUrl} target="_blank" rel="noreferrer">
-                View
-                <Eye size={15} />
-              </a>
-
-              <a href={profile.resumeUrl} download>
-                Download
-                <Download size={15} />
-              </a>
-            </div>
+        <Reveal className="terminal contact-terminal" delay={120}>
+          <div className="terminal-bar">
+            <span className="dot dot-r" />
+            <span className="dot dot-y" />
+            <span className="dot dot-g" />
+            <span className="terminal-title">
+              ~/{profile.shortName.toLowerCase()}/resume — zsh
+            </span>
           </div>
 
-          <a
-            className="resume-preview-image-link"
-            href={profile.resumeUrl}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Open resume PDF"
+          <div
+            className="contact-terminal-body"
+            onClick={() => commandInputRef.current?.focus()}
           >
-            <img
-              src="/resume/resume-preview.avif"
-              alt="Resume preview of Railey Dela Peña"
-              className="resume-preview-image"
-            />
-          </a>
-        </div>
-      </Reveal>
+            <button
+              className="terminal-resume-preview"
+              type="button"
+              onClick={openResume}
+              aria-label="Open resume PDF"
+            >
+              <img
+                src="/resume/resume-preview.avif"
+                alt="Resume preview of Railey Dela Peña"
+              />
+            </button>
+
+            <div className="terminal-session" aria-live="polite">
+              {entries.map((entry, entryIndex) => (
+                <div className="terminal-entry" key={`${entry.command}-${entryIndex}`}>
+                  {entry.command ? (
+                    <span className="t-line">
+                      <span className="t-prompt">&gt; </span>
+                      <span className="t-cmd">{entry.command}</span>
+                    </span>
+                  ) : null}
+                  {entry.lines.map((line) => (
+                    <span className="t-line" key={`${entryIndex}-${line}`}>
+                      <span className="t-com">{line}</span>
+                    </span>
+                  ))}
+                </div>
+              ))}
+
+              <form className="terminal-input-row" onSubmit={handleSubmit}>
+                <label className="sr-only" htmlFor="contact-terminal-command">
+                  Terminal command
+                </label>
+                <span className="t-prompt">&gt;</span>
+                <span className="terminal-input-shell" aria-hidden="true">
+                  {input || <span className="terminal-placeholder">help</span>}
+                  <span className="terminal-cursor" />
+                </span>
+                <input
+                  ref={commandInputRef}
+                  id="contact-terminal-command"
+                  autoComplete="off"
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  aria-label="Terminal command"
+                />
+              </form>
+              <div ref={terminalEndRef} />
+            </div>
+          </div>
+        </Reveal>
+      </div>
 
       <div className="contact-grid">
         <Reveal className="contact-panel">
@@ -105,8 +227,9 @@ export default function Contact() {
           </div>
           <h2>Availability</h2>
           <p>
-            Available for selected freelance builds, AI-assisted workflows,
-            Laravel/PHP systems, and React interfaces.
+            {isAvailable
+              ? "Available for selected freelance builds, AI-assisted workflows, Laravel/PHP systems, and React interfaces."
+              : "Currently focused on existing commitments, but still reachable for future-fit projects and thoughtful collaborations."}
           </p>
           <div className="availability-list">
             <span>

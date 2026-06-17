@@ -2,7 +2,20 @@ import { ArrowRight, Mail, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import HeroWord from "../components/HeroWord";
 import Reveal from "../components/Reveal";
-import { profile, skillGroups, stats, type SkillLevel } from "../lib/content";
+import {
+  isAvailable,
+  profile,
+  skillGroups,
+  stats,
+  type SkillLevel,
+} from "../lib/content";
+
+const levelBar: Record<SkillLevel, number> = {
+  Expert: 100,
+  Advanced: 78,
+  Intermediate: 55,
+  Novice: 28,
+};
 
 const levelClass: Record<SkillLevel, string> = {
   Expert: "level-expert",
@@ -11,31 +24,12 @@ const levelClass: Record<SkillLevel, string> = {
   Novice: "level-novice",
 };
 
-const heroConfigLines = [
-  {
-    key: "mode",
-    value: "portfolio-build",
-  },
-  {
-    key: "theme",
-    value: ["near-black", "indigo", "glass"],
-  },
-  {
-    key: "motion",
-    value: "typed-hero-loop",
-  },
-  {
-    key: "stack",
-    value: ["React", "TypeScript", "Laravel"],
-  },
-  {
-    key: "links",
-    value: ["GitHub", "LinkedIn", "Resume"],
-  },
-  {
-    key: "ship",
-    value: true,
-  },
+const terminalLines = [
+  { key: "name", value: `"${profile.name}"`, type: "str" },
+  { key: "role", value: `"${profile.role}"`, type: "str" },
+  { key: "location", value: `"${profile.location}"`, type: "str" },
+  { key: "hobbies", value: `["Coding", "Research"]`, type: "arr" },
+  { key: "available", value: String(isAvailable), type: "bool" },
 ];
 
 export default function Home() {
@@ -79,13 +73,13 @@ export default function Home() {
                 <span className="dot dot-r" />
                 <span className="dot dot-y" />
                 <span className="dot dot-g" />
-                <span className="terminal-title">~/rdp-portfolio - zsh</span>
+                <span className="terminal-title">~/rdp-portfolio — zsh</span>
               </div>
 
               <div className="terminal-body hero-terminal-body">
                 <span className="t-line">
                   <span className="t-prompt">&gt; </span>
-                  <span className="t-cmd">npm run inspect:brand</span>
+                  <span className="t-cmd">cat developer.json</span>
                 </span>
 
                 <span className="t-line">&nbsp;</span>
@@ -94,30 +88,17 @@ export default function Home() {
                   <span className="t-com">{"{"}</span>
                 </span>
 
-                {heroConfigLines.map((line) => (
+                {terminalLines.map((line) => (
                   <span className="t-line hero-json-line" key={line.key}>
                     <span className="t-key">"{line.key}"</span>
                     <span className="t-com">: </span>
-
-                    {Array.isArray(line.value) ? (
-                      <span className="hero-json-array">
-                        [
-                        {(line.value as string[]).map((item, index) => (
-                          <span className="t-str" key={item}>
-                            "{item}"
-                            {index < (line.value as string[]).length - 1
-                              ? ", "
-                              : ""}
-                          </span>
-                        ))}
-                        ]
-                      </span>
-                    ) : typeof line.value === "boolean" ? (
-                      <span className="t-val">{String(line.value)}</span>
+                    {line.type === "bool" ? (
+                      <span className="t-val">{line.value}</span>
+                    ) : line.type === "arr" ? (
+                      <span className="t-str">{line.value}</span>
                     ) : (
-                      <span className="t-str">"{line.value}"</span>
+                      <span className="t-str">{line.value}</span>
                     )}
-
                     <span className="t-com">,</span>
                   </span>
                 ))}
@@ -128,10 +109,11 @@ export default function Home() {
 
                 <span className="t-line">&nbsp;</span>
 
-                <span className="t-line hero-terminal-note">
+                <span className="t-line">
                   <span className="t-prompt">&gt; </span>
-                  <span className="t-cmd">brand check passed</span>
-                  <span className="t-val"> ✓</span>
+                  <span className="t-cmd hero-terminal-cursor">
+                    <span className="cursor" aria-hidden="true" />
+                  </span>
                 </span>
               </div>
             </Reveal>
@@ -156,27 +138,48 @@ export default function Home() {
           </h2>
         </Reveal>
 
-        <div className="skill-groups">
+        <div className="skill-groups-grid">
           {skillGroups.map((group, groupIndex) => (
             <Reveal
               key={group.label}
-              className="skill-group"
+              className="skill-group-card"
               delay={groupIndex * 80}
             >
               <div className="skill-group-label">{group.label}</div>
-              <div className="skill-pills">
+              <div className="skill-rows">
                 {group.skills.map((skill) => (
-                  <div className="pill" key={skill.name}>
-                    {skill.name}
-                    <span className={`pill-level ${levelClass[skill.level]}`}>
-                      {skill.level}
-                    </span>
+                  <div className="skill-row" key={skill.name}>
+                    <div className="skill-row-meta">
+                      <span className="skill-name">{skill.name}</span>
+                      <span
+                        className={`skill-level-tag ${levelClass[skill.level]}`}
+                      >
+                        {skill.level}
+                      </span>
+                    </div>
+                    <div className="skill-track">
+                      <div
+                        className={`skill-fill ${levelClass[skill.level]}`}
+                        style={{ width: `${levelBar[skill.level]}%` }}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
             </Reveal>
           ))}
         </div>
+
+        <Reveal className="skill-legend" delay={240}>
+          {(
+            ["Expert", "Advanced", "Intermediate", "Novice"] as SkillLevel[]
+          ).map((level) => (
+            <div className="legend-item" key={level}>
+              <div className={`legend-dot ${levelClass[level]}`} />
+              <span>{level}</span>
+            </div>
+          ))}
+        </Reveal>
       </section>
     </>
   );

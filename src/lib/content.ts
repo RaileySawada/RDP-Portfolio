@@ -24,6 +24,8 @@ export const profile = {
   },
 };
 
+export const isAvailable = true;
+
 export type SkillLevel = "Expert" | "Advanced" | "Intermediate" | "Novice";
 
 export type Skill = {
