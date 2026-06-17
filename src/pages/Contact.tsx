@@ -57,11 +57,15 @@ export default function Contact() {
   const [entries, setEntries] = useState<TerminalEntry[]>(initialEntries);
   const [input, setInput] = useState("");
   const commandInputRef = useRef<HTMLInputElement>(null);
-  const terminalEndRef = useRef<HTMLDivElement>(null);
+  const terminalBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    terminalEndRef.current?.scrollIntoView({ block: "end" });
-  }, [entries, input]);
+    const terminalBody = terminalBodyRef.current;
+
+    if (terminalBody) {
+      terminalBody.scrollTop = terminalBody.scrollHeight;
+    }
+  }, [entries]);
 
   const openResume = () => {
     window.open(profile.resumeUrl, "_blank", "noopener,noreferrer");
@@ -165,7 +169,10 @@ export default function Contact() {
 
           <div
             className="contact-terminal-body"
-            onClick={() => commandInputRef.current?.focus()}
+            ref={terminalBodyRef}
+            onClick={() =>
+              commandInputRef.current?.focus({ preventScroll: true })
+            }
           >
             <button
               className="terminal-resume-preview"
@@ -196,7 +203,14 @@ export default function Contact() {
                 </div>
               ))}
 
-              <form className="terminal-input-row" onSubmit={handleSubmit}>
+              <form
+                className="terminal-input-row"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  commandInputRef.current?.focus({ preventScroll: true });
+                }}
+                onSubmit={handleSubmit}
+              >
                 <label className="sr-only" htmlFor="contact-terminal-command">
                   Terminal command
                 </label>
@@ -214,7 +228,6 @@ export default function Contact() {
                   aria-label="Terminal command"
                 />
               </form>
-              <div ref={terminalEndRef} />
             </div>
           </div>
         </Reveal>
