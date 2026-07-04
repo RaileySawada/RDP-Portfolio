@@ -31,4 +31,5 @@ dist-ssr
 # AI
 SKILL.md
 
-# firebase/*
+# Firebase initialization
+firebase/
