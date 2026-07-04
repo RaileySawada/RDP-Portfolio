@@ -1,172 +1,32 @@
-<p align="center">
-  <img src="public/logo/og_logo.png" alt="RDP Portfolio Banner" width="100%" />
-</p>
+# React + TypeScript + Vite
 
-<h1 align="center">RDP Portfolio</h1>
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
-<p align="center">
-  Personal developer portfolio of <strong>Railey Dela Peña</strong>, showcasing web systems, AI-integrated platforms, developer tools, and full-stack projects.
-</p>
+Currently, two official plugins are available:
 
-<p align="center">
-  <a href="https://rdp-portfolio.netlify.app" target="_blank">
-    <strong>Live Portfolio</strong>
-  </a>
-</p>
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-<p align="center">
-  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
-  <img src="https://img.shields.io/badge/TypeScript-20232A?style=for-the-badge&logo=typescript&logoColor=3178C6" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-20232A?style=for-the-badge&logo=tailwind-css&logoColor=38B2AC" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/Netlify-20232A?style=for-the-badge&logo=netlify&logoColor=00C7B7" alt="Netlify" />
-</p>
+## React Compiler
 
----
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Overview
+## Expanding the Oxlint configuration
 
-This portfolio presents my background, skills, selected projects, resume, and contact links in a modern dark interface. It highlights my work as a full-stack developer focused on PHP/Laravel systems, React and TypeScript interfaces, CLI tooling, and AI-assisted workflows.
+If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
 
-Live site: [https://rdp-portfolio.netlify.app](https://rdp-portfolio.netlify.app)
-
----
-
-## Features
-
-- Modern dark UI with an indigo-accented visual palette
-- Animated hero text with typing and backspacing effect
-- Interactive cursor particle background
-- Responsive layout for desktop, tablet, and mobile screens
-- Project cards with optional external project links
-- Resume preview with view and download actions
-- Contact section with email, GitHub, LinkedIn, and resume access
-- Open Graph-ready branding using `public/logo/og_logo.png`
-
----
-
-## Tech Stack
-
-- React
-- TypeScript
-- Tailwind CSS
-- Vite
-- Lucide React Icons
-- Netlify
-
----
-
-## Featured Projects
-
-### Formless AI
-
-AI-powered form automation tool that fills online forms using OpenAI and Mistral models.
-
-### e-Docs
-
-Institutional document management system built for City College of Calamba (CCC), supporting research, extension, planning, and quality assurance workflows with AI-assisted document review and decision support.
-
-### Applicant Management System
-
-Recruitment platform for Staff Search Asia with applicant-job matching, shortlisting, job posting, and analytics dashboards.
-
-### Scafkit CLI
-
-npm-based scaffolding and build helper for PHP MVC, PERN, React, and Laravel workflows. It generates starter projects, automates local tooling, and packages Laravel apps for deployment.
-
-### e-Formatter
-
-Research manuscript formatter built for City College of Calamba (CCC), designed to format academic papers based on CCC guidelines and selected international conference standards.
-
-### Resumakr
-
-Resume builder with live preview and export functionality using a clean React and TypeScript component architecture.
-
----
-
-## Getting Started
-
-Clone the repository:
-
-```bash
-git clone https://github.com/RaileySawada/rdp-portfolio.git
+```json
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "options": {
+    "typeAware": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
 ```
 
-Go to the project directory:
-
-```bash
-cd rdp-portfolio
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Start the development server:
-
-```bash
-npm run dev
-```
-
-Build for production:
-
-```bash
-npm run build
-```
-
-Preview the production build:
-
-```bash
-npm run preview
-```
-
----
-
-## Project Structure
-
-```text
-rdp-portfolio/
-├─ public/
-│  ├─ logo/
-│  │  └─ og_logo.png
-│  └─ resume/
-│     └─ RaileyDelaPena.pdf
-├─ src/
-│  ├─ components/
-│  ├─ layouts/
-│  ├─ lib/
-│  │  └─ content.ts
-│  ├─ pages/
-│  ├─ App.tsx
-│  ├─ main.tsx
-│  └─ index.css
-├─ package.json
-└─ README.md
-```
-
----
-
-## Open Graph Image
-
-The main branding and preview asset is located at:
-
-```text
-public/logo/og_logo.png
-```
-
-This image is also used as the README banner.
-
----
-
-## Contact
-
-- Portfolio: [https://rdp-portfolio.netlify.app](https://rdp-portfolio.netlify.app)
-- GitHub: [https://github.com/RaileySawada](https://github.com/RaileySawada)
-- LinkedIn: [https://www.linkedin.com/in/railey-dela-pe%C3%B1a-451a11372/](https://www.linkedin.com/in/railey-dela-pe%C3%B1a-451a11372/)
-
----
-
-## Author
-
-Developed by **Railey Dela Peña**.
+See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
