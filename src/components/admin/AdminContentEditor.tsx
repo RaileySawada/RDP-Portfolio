@@ -6,6 +6,7 @@ import { getPortfolioData, normalizePortfolioData } from "../../services/portfol
 import { savePortfolioData } from "../../services/adminPortfolio";
 import type { AdminSession } from "../../services/adminAuth";
 import { uploadAdminImage } from "../../services/adminUpload";
+import { ImageIcon, TrashIcon, UploadIcon } from "../ui/Icons";
 
 type AdminContentEditorProps = {
   session: AdminSession;
@@ -271,19 +272,30 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
 
     if (activeSection === "links") {
       return (
-        <EditorPanel title="Links">
+        <EditorPanel
+          title="Links"
+          count={portfolio.profile.socials.length}
+          action={
+            <button className="button-secondary admin-inline-button" type="button" onClick={addSocial}>
+              Add link
+            </button>
+          }
+        >
+          {portfolio.profile.socials.length === 0 ? <EmptyState label="No links yet. Add your first one." /> : null}
           {portfolio.profile.socials.map((social, index) => (
-            <div className="admin-editor-row" key={`${social.label}-${index}`}>
-              <AdminInput label="Label" value={social.label} onChange={(value) => updateSocial(index, "label", value)} />
-              <AdminInput label="URL" value={social.href} onChange={(value) => updateSocial(index, "href", value)} />
-              <button className="admin-danger-button" type="button" onClick={() => removeSocial(index)}>
-                Delete
-              </button>
+            <div className="admin-editor-item" key={`${social.label}-${index}`}>
+              <div className="admin-editor-item-head">
+                <span className="admin-editor-item-index">Link {String(index + 1).padStart(2, "0")}</span>
+                <button className="admin-icon-button" type="button" aria-label="Delete link" onClick={() => removeSocial(index)}>
+                  <TrashIcon />
+                </button>
+              </div>
+              <div className="admin-editor-row admin-editor-row-2">
+                <AdminInput label="Label" value={social.label} onChange={(value) => updateSocial(index, "label", value)} />
+                <AdminInput label="URL" value={social.href} onChange={(value) => updateSocial(index, "href", value)} />
+              </div>
             </div>
           ))}
-          <button className="button-secondary admin-inline-button" type="button" onClick={addSocial}>
-            Add link
-          </button>
         </EditorPanel>
       );
     }
@@ -292,14 +304,22 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
       return (
         <EditorPanel
           title="Projects"
+          count={portfolio.projects.length}
           action={
             <button className="button-secondary admin-inline-button" type="button" onClick={() => setPortfolio((current) => ({ ...current, projects: [...current.projects, emptyProject] }))}>
               Add project
             </button>
           }
         >
+          {portfolio.projects.length === 0 ? <EmptyState label="No projects yet. Add your first one." /> : null}
           {portfolio.projects.map((project, index) => (
             <div className="admin-editor-item" key={`${project.title}-${index}`}>
+              <div className="admin-editor-item-head">
+                <span className="admin-editor-item-index">{project.title.trim() || `Project ${String(index + 1).padStart(2, "0")}`}</span>
+                <button className="admin-icon-button" type="button" aria-label="Delete project" onClick={() => removeProject(index)}>
+                  <TrashIcon />
+                </button>
+              </div>
               <AdminInput label="Title" value={project.title} onChange={(value) => updateProject(index, { title: value })} />
               <AdminTextarea label="Description" value={project.description} onChange={(value) => updateProject(index, { description: value })} />
               <div className="admin-editor-row">
@@ -314,7 +334,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
                 onChange={(value) => updateProject(index, { imageUrl: value })}
                 onUpload={(file) => handleProjectImageUpload(index, file)}
               />
-              <div className="admin-editor-row">
+              <div className="admin-editor-row admin-editor-row-2">
                 <AdminTextarea label="Tech, one per line" value={toLines(project.tech)} onChange={(value) => updateProject(index, { tech: fromLines(value) })} />
                 <label className="admin-field">
                   <span>Icon</span>
@@ -327,9 +347,6 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
                   </select>
                 </label>
               </div>
-              <button className="admin-danger-button" type="button" onClick={() => removeProject(index)}>
-                Delete project
-              </button>
             </div>
           ))}
         </EditorPanel>
@@ -340,6 +357,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
       return (
         <EditorPanel
           title="Certifications"
+          count={portfolio.certifications.length}
           action={
             <button
               className="button-secondary admin-inline-button"
@@ -350,14 +368,21 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
             </button>
           }
         >
+          {portfolio.certifications.length === 0 ? <EmptyState label="No certifications yet. Add your first one." /> : null}
           {portfolio.certifications.map((certification, index) => (
             <div className="admin-editor-item" key={`${certification.name}-${index}`}>
+              <div className="admin-editor-item-head">
+                <span className="admin-editor-item-index">{certification.name.trim() || `Certification ${String(index + 1).padStart(2, "0")}`}</span>
+                <button className="admin-icon-button" type="button" aria-label="Delete certification" onClick={() => removeCertification(index)}>
+                  <TrashIcon />
+                </button>
+              </div>
               <div className="admin-editor-row">
                 <AdminInput label="Name" value={certification.name} onChange={(value) => updateCertification(index, { name: value })} />
                 <AdminInput label="Issuer" value={certification.issuer} onChange={(value) => updateCertification(index, { issuer: value })} />
                 <AdminInput label="Date" value={certification.date} onChange={(value) => updateCertification(index, { date: value })} />
               </div>
-              <AdminInput label="Credential link" value={certification.credential} onChange={(value) => updateCertification(index, { credential: value })} />
+              <AdminInput label="Credential link" value={certification.credential || ""} onChange={(value) => updateCertification(index, { credential: value })} />
               <ImageField
                 label="Certificate image"
                 value={certification.imageUrl || ""}
@@ -366,9 +391,6 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
                 onUpload={(file) => handleCertificationImageUpload(index, file)}
               />
               <AdminTextarea label="Details" value={certification.details || ""} onChange={(value) => updateCertification(index, { details: value })} />
-              <button className="admin-danger-button" type="button" onClick={() => removeCertification(index)}>
-                Delete certification
-              </button>
             </div>
           ))}
         </EditorPanel>
@@ -418,16 +440,23 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
   );
 }
 
-function EditorPanel({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
+function EditorPanel({ title, count, action, children }: { title: string; count?: number; action?: ReactNode; children: ReactNode }) {
   return (
     <section className="admin-editor-panel">
       <div className="admin-editor-panel-heading">
-        <h2>{title}</h2>
+        <div className="admin-editor-panel-title">
+          <h2>{title}</h2>
+          {typeof count === "number" ? <span className="admin-editor-panel-count">{count}</span> : null}
+        </div>
         {action}
       </div>
       <div className="admin-editor-panel-body">{children}</div>
     </section>
   );
+}
+
+function EmptyState({ label }: { label: string }) {
+  return <p className="admin-editor-empty">{label}</p>;
 }
 
 function AdminInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
@@ -463,24 +492,37 @@ function ImageField({
 }) {
   return (
     <div className="admin-image-field">
-      <AdminInput label={`${label} URL`} value={value} onChange={onChange} />
-      <label className="admin-upload-button">
-        <input
-          accept="image/*"
-          type="file"
-          disabled={isUploading}
-          onChange={(event) => {
-            onUpload(event.target.files?.[0]);
-            event.currentTarget.value = "";
-          }}
-        />
-        <span>{isUploading ? "Uploading..." : "Upload image"}</span>
-      </label>
-      {value ? (
-        <div className="admin-image-preview">
+      <div className="admin-image-preview">
+        {value ? (
           <img src={value} alt="" />
-        </div>
-      ) : null}
+        ) : (
+          <span className="admin-image-placeholder">
+            <ImageIcon className="h-6 w-6" />
+          </span>
+        )}
+      </div>
+      <div className="admin-image-controls">
+        <AdminInput label={`${label} URL`} value={value} onChange={onChange} />
+        <label className="admin-upload-button">
+          <input
+            accept="image/*"
+            type="file"
+            disabled={isUploading}
+            onChange={(event) => {
+              onUpload(event.target.files?.[0]);
+              event.currentTarget.value = "";
+            }}
+          />
+          {isUploading ? <span className="admin-spinner" aria-hidden="true" /> : <UploadIcon className="h-4 w-4" />}
+          <span>{isUploading ? "Uploading..." : "Upload image"}</span>
+        </label>
+        {value ? (
+          <button className="admin-image-clear" type="button" onClick={() => onChange("")}>
+            <TrashIcon className="h-3.5 w-3.5" />
+            <span>Remove</span>
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -517,19 +559,24 @@ function GroupEditor({
   return (
     <EditorPanel
       title={title}
+      count={groups.length}
       action={
         <button className="button-secondary admin-inline-button" type="button" onClick={onAdd}>
           Add category
         </button>
       }
     >
+      {groups.length === 0 ? <EmptyState label="No categories yet. Add your first one." /> : null}
       {groups.map((group, index) => (
         <div className="admin-editor-item" key={`${group.category}-${index}`}>
+          <div className="admin-editor-item-head">
+            <span className="admin-editor-item-index">{group.category.trim() || `Category ${String(index + 1).padStart(2, "0")}`}</span>
+            <button className="admin-icon-button" type="button" aria-label="Delete category" onClick={() => onRemove(index)}>
+              <TrashIcon />
+            </button>
+          </div>
           <AdminInput label="Category" value={group.category} onChange={(value) => onUpdate(index, { category: value })} />
           <AdminTextarea label="Items, one per line" value={toLines(group.items)} onChange={(value) => onUpdate(index, { items: fromLines(value) })} />
-          <button className="admin-danger-button" type="button" onClick={() => onRemove(index)}>
-            Delete category
-          </button>
         </div>
       ))}
     </EditorPanel>

@@ -198,6 +198,34 @@ export function SealIcon({ className = "h-7 w-7" }: IconProps) {
   );
 }
 
+export function TrashIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M4 7h16M9 7V4.8c0-.4.4-.8.9-.8h4.2c.5 0 .9.4.9.8V7M18.5 7l-.7 12.2c0 .9-.8 1.6-1.7 1.6H8c-.9 0-1.7-.7-1.7-1.6L5.5 7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 11v6M14 11v6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function UploadIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M12 15V4M8 8l4-4 4 4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function ImageIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="8.5" cy="10" r="1.75" />
+      <path d="m4.5 17.5 5-5 3.5 3.5 2-2 4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function SocialIcon({ label, className = "h-4 w-4" }: IconProps & { label: string }) {
   if (label === "GitHub") {
     return (
