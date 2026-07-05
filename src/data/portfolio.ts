@@ -7,6 +7,7 @@ export type Project = {
   status: string;
   github: string;
   demo?: string;
+  imageUrl?: string;
   icon?: ProjectIconKey;
 };
 
@@ -14,10 +15,17 @@ export type Certification = {
   name: string;
   issuer: string;
   date: string;
-  credential: string;
+  credential?: string;
+  imageUrl?: string;
+  details?: string;
 };
 
 export type StackGroup = {
+  category: string;
+  items: string[];
+};
+
+export type SkillGroup = {
   category: string;
   items: string[];
 };
@@ -27,6 +35,8 @@ export type TimelineItem = {
   title: string;
   detail: string;
 };
+
+export type SocialLink = { label: string; href: string };
 
 export type Profile = {
   name: string;
@@ -40,13 +50,21 @@ export type Profile = {
   goals: string;
   githubUser: string;
   imageUrl: string;
-  socials: { label: string; href: string }[];
+  socials: SocialLink[];
+};
+
+export type HomeShowcase = {
+  projectTitles: string[];
+  certificationNames: string[];
+  stackItems: string[];
 };
 
 export type PortfolioData = {
   profile: Profile;
+  home?: HomeShowcase;
   projects: Project[];
   stackGroups: StackGroup[];
+  skillGroups?: SkillGroup[];
   certifications: Certification[];
   timeline: TimelineItem[];
 };
@@ -79,6 +97,15 @@ export const fallbackPortfolio: PortfolioData = {
       { label: "Email", href: "mailto:railey.solidum.delapena29@gmail.com" },
     ],
   },
+  home: {
+    projectTitles: [
+      "Applicant Management with Decision Support and Data Analytics",
+      "e-Docs Document Management System",
+      "e-Formatter",
+    ],
+    certificationNames: ["Project Management For IT Students", "HTML Essentials", "Hackathon Champion"],
+    stackItems: ["JavaScript", "TypeScript", "React", "Next.js", "Vue", "HTML", "CSS", "Tailwind CSS", "PHP", "MySQL", "PostgreSQL", "Bash"],
+  },
   projects: [
     {
       title: "Applicant Management with Decision Support and Data Analytics",
@@ -110,9 +137,23 @@ export const fallbackPortfolio: PortfolioData = {
   ],
   stackGroups: [
     {
-      category: "Core Stack",
-      items: ["JavaScript", "TypeScript", "React", "Next.js", "Vue", "HTML", "CSS", "Tailwind CSS", "PHP", "MySQL", "PostgreSQL", "Bash"],
+      category: "Frontend",
+      items: ["React", "TypeScript", "JavaScript", "Next.js", "Vue", "HTML", "CSS", "Tailwind CSS"],
     },
+    {
+      category: "Backend",
+      items: ["PHP", "Node.js", "REST APIs", "Bash"],
+    },
+    {
+      category: "Database",
+      items: ["MySQL", "PostgreSQL", "Firestore"],
+    },
+    {
+      category: "Platforms",
+      items: ["Firebase", "Cloudinary", "Netlify", "Git"],
+    },
+  ],
+  skillGroups: [
     {
       category: "Product Skills",
       items: ["Responsive UI", "Database Integration", "REST APIs", "Troubleshooting", "Maintenance", "Performance Improvements", "Client Coordination"],

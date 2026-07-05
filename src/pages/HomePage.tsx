@@ -29,6 +29,7 @@ export function HomePage({ portfolio, isDark }: HomePageProps) {
 
 function OverviewProjects({ portfolio }: { portfolio: PortfolioData }) {
   const { projects } = portfolio;
+  const featuredProjects = getFeaturedItems(projects, portfolio.home?.projectTitles || [], (project) => project.title, 3);
 
   return (
     <Section
@@ -42,7 +43,7 @@ function OverviewProjects({ portfolio }: { portfolio: PortfolioData }) {
       }
     >
       <div className="grid gap-4 lg:grid-cols-3">
-        {projects.slice(0, 3).map((project, index) => (
+        {featuredProjects.map((project, index) => (
           <Reveal delay={index * 80} key={project.title}>
             <ProjectCard project={project} index={index} />
           </Reveal>
@@ -53,7 +54,7 @@ function OverviewProjects({ portfolio }: { portfolio: PortfolioData }) {
 }
 
 function OverviewStack({ portfolio }: { portfolio: PortfolioData }) {
-  const stackItems = portfolio.stackGroups.flatMap((group) => group.items);
+  const stackItems = getFeaturedStrings(portfolio.stackGroups.flatMap((group) => group.items), portfolio.home?.stackItems || [], 24);
 
   return (
     <Section
@@ -79,6 +80,12 @@ function OverviewStack({ portfolio }: { portfolio: PortfolioData }) {
 
 function OverviewCertifications({ portfolio }: { portfolio: PortfolioData }) {
   const { certifications, profile } = portfolio;
+  const featuredCertifications = getFeaturedItems(
+    certifications,
+    portfolio.home?.certificationNames || [],
+    (certification) => certification.name,
+    3,
+  );
 
   return (
     <Section
@@ -92,10 +99,24 @@ function OverviewCertifications({ portfolio }: { portfolio: PortfolioData }) {
       }
     >
       <div className="certificate-grid grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {certifications.slice(0, 3).map((certification, index) => (
+        {featuredCertifications.map((certification, index) => (
           <CertificateCard certification={certification} recipientName={profile.name} key={certification.name} index={index} />
         ))}
       </div>
     </Section>
   );
+}
+
+function getFeaturedItems<T>(items: T[], selectedKeys: string[], getKey: (item: T) => string, fallbackCount: number) {
+  const selected = selectedKeys
+    .map((key) => items.find((item) => getKey(item) === key))
+    .filter((item): item is T => Boolean(item));
+
+  return selected.length ? selected : items.slice(0, fallbackCount);
+}
+
+function getFeaturedStrings(items: string[], selectedItems: string[], fallbackCount: number) {
+  const uniqueItems = Array.from(new Set(items));
+  const selected = selectedItems.filter((item) => uniqueItems.includes(item));
+  return selected.length ? selected : uniqueItems.slice(0, fallbackCount);
 }

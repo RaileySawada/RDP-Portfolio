@@ -115,6 +115,7 @@ function buildActivityEvents(adminAuthStore) {
 
 function buildAnalytics(store, adminAuthStore) {
   const now = Date.now();
+  const credentials = adminAuthStore?.credentials || {};
   const sessions = Object.values(store?.sessions || {});
   const totalViewers = Math.max(Number(store?.total || 0), sessions.length);
   const activeViewers = Math.max(
@@ -156,6 +157,11 @@ function buildAnalytics(store, adminAuthStore) {
   });
 
   return {
+    adminProfile: {
+      name: credentials.name || "Admin",
+      email: credentials.email || "",
+      role: credentials.role || "Admin",
+    },
     totalViewers,
     activeViewers,
     todayViewers: newViewersByDay.get(todayKey) || 0,

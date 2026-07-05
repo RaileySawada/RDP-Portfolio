@@ -32,9 +32,12 @@ export function ProjectCard({ project, index = 0 }: ProjectCardProps) {
       ref={ref}
     >
       <div className="project-thumb" data-index={serial}>
-        <span className="project-thumb-icon">
-          <ThumbIcon />
-        </span>
+        {project.imageUrl ? <img src={project.imageUrl} alt="" /> : null}
+        {!project.imageUrl ? (
+          <span className="project-thumb-icon">
+            <ThumbIcon />
+          </span>
+        ) : null}
         <span>{project.status}</span>
       </div>
       <h3 className="mt-5 text-xl font-semibold text-neutral-950 dark:text-white">

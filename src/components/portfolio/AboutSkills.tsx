@@ -5,7 +5,9 @@ type AboutSkillsProps = {
 };
 
 export function AboutSkills({ portfolio }: AboutSkillsProps) {
-  const skills = portfolio.stackGroups.find((group) => group.category === "Soft Skills")?.items || [];
+  const skills = (portfolio.skillGroups?.length ? portfolio.skillGroups : portfolio.stackGroups.filter((group) => group.category.toLowerCase().includes("skill")))
+    .flatMap((group) => group.items)
+    .filter(Boolean);
 
   if (skills.length === 0) {
     return null;

@@ -23,18 +23,10 @@ export function StackRows({ portfolio }: StackRowsProps) {
 }
 
 function getTechnicalStackRows(portfolio: PortfolioData): StackRowData[] {
-  const items = new Set(portfolio.stackGroups.flatMap((group) => group.items));
-  const rows = [
-    { category: "Frontend", items: ["React", "TypeScript", "JavaScript", "Next.js", "Vue", "HTML", "CSS", "Tailwind CSS"] },
-    { category: "Backend", items: ["PHP", "Node.js", "REST APIs", "Bash"] },
-    { category: "Database", items: ["MySQL", "PostgreSQL", "Firestore"] },
-    { category: "Platforms", items: ["Firebase", "Cloudinary", "Netlify", "Git"] },
-  ];
-
-  return rows
-    .map((row) => ({
-      ...row,
-      items: row.items.filter((item) => items.has(item)),
+  return portfolio.stackGroups
+    .map((group) => ({
+      category: group.category,
+      items: group.items.filter(Boolean),
     }))
     .filter((row) => row.items.length > 0);
 }

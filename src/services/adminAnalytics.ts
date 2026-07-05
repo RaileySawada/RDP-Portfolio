@@ -20,7 +20,14 @@ export type AdminActivityEvent = {
   time: number;
 };
 
+export type AdminProfile = {
+  name: string;
+  email: string;
+  role: string;
+};
+
 export type AdminAnalytics = {
+  adminProfile: AdminProfile;
   totalViewers: number;
   activeViewers: number;
   todayViewers: number;
@@ -50,6 +57,11 @@ type VisitorStore = {
 };
 
 type AdminAuthStore = {
+  credentials?: {
+    name?: string;
+    email?: string;
+    role?: string;
+  };
   auditEvents?: Record<string, Partial<AdminActivityEvent>>;
   sessions?: Record<string, { email?: string; createdAt?: number; request?: { ip?: string; userAgent?: string } }>;
   loginAttempts?: Record<string, { email?: string; lastAttemptAt?: number; lockedUntil?: number; request?: { ip?: string; userAgent?: string } }>;
@@ -59,6 +71,11 @@ const activeWindowMs = 90000;
 const dayMs = 24 * 60 * 60 * 1000;
 
 export const fallbackAnalytics: AdminAnalytics = {
+  adminProfile: {
+    name: "Admin",
+    email: "",
+    role: "Admin",
+  },
   totalViewers: 0,
   activeViewers: 0,
   todayViewers: 0,
@@ -134,6 +151,7 @@ function buildActivityEvents(adminAuthStore: AdminAuthStore): AdminActivityEvent
 
 function buildAnalytics(store: VisitorStore, adminAuthStore: AdminAuthStore = {}): AdminAnalytics {
   const now = Date.now();
+  const credentials = adminAuthStore.credentials || {};
   const sessions = Object.values(store.sessions || {});
   const totalViewers = Math.max(Number(store.total || 0), sessions.length);
   const activeViewers = Math.max(
@@ -179,6 +197,11 @@ function buildAnalytics(store: VisitorStore, adminAuthStore: AdminAuthStore = {}
   );
 
   return {
+    adminProfile: {
+      name: credentials.name || "Admin",
+      email: credentials.email || "",
+      role: credentials.role || "Admin",
+    },
     totalViewers,
     activeViewers,
     todayViewers,

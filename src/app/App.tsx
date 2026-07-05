@@ -36,7 +36,10 @@ function PortfolioApp() {
   const portfolio = usePortfolioData();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
-  const isAdminRoute = location.pathname === "/rdp-login" || location.pathname === "/dashboard-login" || location.pathname === "/rdp-admin";
+  const isAdminRoute =
+    location.pathname === "/rdp-login" ||
+    location.pathname === "/dashboard-login" ||
+    location.pathname.startsWith("/rdp-admin");
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 transition-colors duration-200 dark:bg-neutral-950 dark:text-neutral-100">
@@ -55,6 +58,7 @@ function PortfolioApp() {
       {!isAdminRoute ? (
         <Sidebar
           navItems={navItems}
+          profile={portfolio.profile}
           isOpen={sidebarOpen}
           selectedTheme={themePreference}
           activeViewers={visitorStats.activeViewers}
@@ -79,9 +83,11 @@ function PortfolioApp() {
           <Route path="/stack" element={<StackPage portfolio={portfolio} />} />
           <Route path="/certifications" element={<CertificationsPage portfolio={portfolio} />} />
           <Route path="/about" element={<AboutPage portfolio={portfolio} />} />
-          <Route path="/rdp-login" element={<DashboardRoute />} />
-          <Route path="/rdp-admin" element={<DashboardRoute />} />
-          <Route path="/dashboard-login" element={<DashboardRoute />} />
+          <Route path="/rdp-login" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
+          <Route path="/rdp-admin" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
+          <Route path="/rdp-admin/:view" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
+          <Route path="/rdp-admin/:view/:section" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
+          <Route path="/dashboard-login" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

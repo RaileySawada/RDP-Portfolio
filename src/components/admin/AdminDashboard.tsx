@@ -1,21 +1,32 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router";
 import { profile } from "../../data/portfolio";
+import type { ThemePreference } from "../../hooks/useTheme";
 import { clearAdminSession, type AdminSession } from "../../services/adminAuth";
 import { fetchAdminAnalytics, fallbackAnalytics, type AdminAnalytics } from "../../services/adminAnalytics";
 import { AdminActivityTable } from "./AdminActivityTable";
+import { AdminContentEditor } from "./AdminContentEditor";
 import { AdminSidebar, type AdminView } from "./AdminSidebar";
 import { ViewerDonutChart } from "./ViewerDonutChart";
 import { ViewerLineChart } from "./ViewerLineChart";
 
 type AdminDashboardProps = {
   session: AdminSession;
+  selectedTheme: ThemePreference;
+  onSelectTheme: (theme: ThemePreference, originElement: HTMLElement) => void;
   onLogout: () => void;
 };
 
-export function AdminDashboard({ session, onLogout }: AdminDashboardProps) {
+function isAdminView(view: string | undefined): view is AdminView {
+  return view === "analytics" || view === "content" || view === "account";
+}
+
+export function AdminDashboard({ session, selectedTheme, onSelectTheme, onLogout }: AdminDashboardProps) {
+  const navigate = useNavigate();
+  const { view } = useParams();
   const [analytics, setAnalytics] = useState<AdminAnalytics>(fallbackAnalytics);
-  const [activeView, setActiveView] = useState<AdminView>("analytics");
   const [isLoading, setIsLoading] = useState(true);
+  const activeView: AdminView = isAdminView(view) ? view : "analytics";
 
   useEffect(() => {
     let isMounted = true;
@@ -37,21 +48,39 @@ export function AdminDashboard({ session, onLogout }: AdminDashboardProps) {
     };
   }, [session]);
 
+  useEffect(() => {
+    if (!isAdminView(view)) {
+      navigate("/rdp-admin/analytics", { replace: true });
+    }
+  }, [navigate, view]);
+
+  const handleSelectView = (nextView: AdminView) => {
+    navigate(nextView === "content" ? "/rdp-admin/content/home" : `/rdp-admin/${nextView}`);
+  };
+
   const handleLogout = () => {
     clearAdminSession();
     onLogout();
+    navigate("/rdp-login", { replace: true });
   };
 
   return (
     <section className="admin-dashboard min-h-screen">
-      <AdminSidebar activeView={activeView} onSelectView={setActiveView} onLogout={handleLogout} />
+      <AdminSidebar
+        activeView={activeView}
+        adminProfile={analytics.adminProfile}
+        selectedTheme={selectedTheme}
+        onSelectTheme={onSelectTheme}
+        onSelectView={handleSelectView}
+        onLogout={handleLogout}
+      />
       <div className="admin-dashboard-main">
         {activeView === "analytics" ? (
           <AdminAnalyticsView analytics={analytics} isLoading={isLoading} />
         ) : activeView === "content" ? (
-          <AdminContentView />
+          <AdminContentEditor session={session} />
         ) : (
-          <AdminAccountView />
+          <AdminAccountView adminProfile={analytics.adminProfile} />
         )}
       </div>
     </section>
@@ -119,31 +148,13 @@ function AdminAnalyticsView({ analytics, isLoading }: { analytics: AdminAnalytic
   );
 }
 
-function AdminContentView() {
-  return (
-    <div className="mx-auto max-w-6xl">
-      <header className="admin-dashboard-header">
-        <div>
-          <p className="metadata text-neutral-500 dark:text-neutral-500">Portfolio</p>
-          <h1>Content Editor</h1>
-        </div>
-      </header>
-      <div className="admin-content-placeholder">
-        <p className="metadata text-neutral-500 dark:text-neutral-500">Next</p>
-        <h2>Edit portfolio pages</h2>
-        <p>Use this area for profile, projects, stack, certifications, and about content editing.</p>
-      </div>
-    </div>
-  );
-}
-
-function AdminAccountView() {
+function AdminAccountView({ adminProfile }: { adminProfile: AdminAnalytics["adminProfile"] }) {
   return (
     <div className="mx-auto max-w-6xl">
       <header className="admin-dashboard-header">
         <div>
           <p className="metadata text-neutral-500 dark:text-neutral-500">Account</p>
-          <h1>System Admin</h1>
+          <h1>{adminProfile.name}</h1>
         </div>
       </header>
       <div className="admin-account-panel">
@@ -156,9 +167,9 @@ function AdminAccountView() {
         </div>
         <div>
           <p className="metadata text-neutral-500 dark:text-neutral-500">Signed in as</p>
-          <h2>{profile.name}</h2>
-          <p>{profile.email}</p>
-          <p>Role: Admin</p>
+          <h2>{adminProfile.name}</h2>
+          <p>{adminProfile.email || profile.email}</p>
+          <p>Role: {adminProfile.role}</p>
         </div>
       </div>
     </div>

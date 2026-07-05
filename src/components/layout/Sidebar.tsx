@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, NavLink } from "react-router";
-import { profile } from "../../data/portfolio";
+import type { Profile } from "../../data/portfolio";
 import type { ThemePreference } from "../../hooks/useTheme";
 import {
   CloseIcon,
@@ -29,6 +29,7 @@ const navIcons: Record<
 
 type SidebarProps = {
   navItems: NavItem[];
+  profile: Profile;
   isOpen: boolean;
   selectedTheme: ThemePreference;
   activeViewers: number;
@@ -39,6 +40,7 @@ type SidebarProps = {
 
 export function Sidebar({
   navItems,
+  profile,
   isOpen,
   selectedTheme,
   activeViewers,
