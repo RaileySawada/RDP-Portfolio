@@ -5,11 +5,11 @@ import { Metric } from "./Metric";
 
 type HeroProps = {
   portfolio: PortfolioData;
-  visitorCount: number;
 };
 
-export function Hero({ portfolio, visitorCount }: HeroProps) {
-  const { certifications, profile, projects } = portfolio;
+export function Hero({ portfolio }: HeroProps) {
+  const { certifications, profile, projects, stackGroups } = portfolio;
+  const stackCount = stackGroups.reduce((total, group) => total + group.items.length, 0);
 
   return (
     <section className="section-shell hero-section flex min-h-screen items-center pt-20 lg:pt-16">
@@ -52,7 +52,7 @@ export function Hero({ portfolio, visitorCount }: HeroProps) {
           </div>
 
           <div className="mt-10 grid gap-3 sm:grid-cols-3">
-            <Metric label="Visitors" value={visitorCount.toLocaleString()} />
+            <Metric label="Stacks" value={String(stackCount)} />
             <Metric label="Projects" value={String(projects.length)} />
             <Metric label="Certifications" value={String(certifications.length)} />
           </div>

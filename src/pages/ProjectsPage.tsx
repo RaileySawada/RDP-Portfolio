@@ -15,7 +15,7 @@ export function ProjectsPage({ portfolio }: ProjectsPageProps) {
 
   return (
     <Section id="projects" title="Projects">
-      <div className="scrollbar-thin flex gap-2 overflow-x-auto pb-2">
+      <div className="scrollbar-thin edge-fade-x flex gap-2 overflow-x-auto pb-2">
         {projectFilters.map((filter) => (
           <button
             className={`filter-chip ${filter === projectFilter ? "is-active" : ""}`}

@@ -10,18 +10,19 @@ import { Section } from "../components/ui/Section";
 
 type HomePageProps = {
   portfolio: PortfolioData;
-  visitorCount: number;
   isDark: boolean;
 };
 
-export function HomePage({ portfolio, visitorCount, isDark }: HomePageProps) {
+export function HomePage({ portfolio, isDark }: HomePageProps) {
   return (
     <>
-      <Hero portfolio={portfolio} visitorCount={visitorCount} />
+      <Hero portfolio={portfolio} />
       <OverviewProjects portfolio={portfolio} />
       <OverviewStack portfolio={portfolio} />
       <OverviewCertifications portfolio={portfolio} />
-      <GitHubContribution portfolio={portfolio} isDark={isDark} />
+      <Reveal>
+        <GitHubContribution portfolio={portfolio} isDark={isDark} />
+      </Reveal>
     </>
   );
 }
@@ -42,7 +43,9 @@ function OverviewProjects({ portfolio }: { portfolio: PortfolioData }) {
     >
       <div className="grid gap-4 lg:grid-cols-3">
         {projects.slice(0, 3).map((project, index) => (
-          <ProjectCard project={project} key={project.title} compact index={index} />
+          <Reveal delay={index * 80} key={project.title}>
+            <ProjectCard project={project} index={index} />
+          </Reveal>
         ))}
       </div>
     </Section>

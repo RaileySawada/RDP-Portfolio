@@ -10,7 +10,6 @@ import { useInView } from "../../hooks/useInView";
 
 type ProjectCardProps = {
   project: Project;
-  compact?: boolean;
   index?: number;
 };
 
@@ -21,18 +20,14 @@ const projectIcons: Record<ProjectIconKey, typeof SystemIcon> = {
   web: WebIcon,
 };
 
-export function ProjectCard({
-  project,
-  compact = false,
-  index = 0,
-}: ProjectCardProps) {
+export function ProjectCard({ project, index = 0 }: ProjectCardProps) {
   const { ref, isInView } = useInView<HTMLElement>();
   const ThumbIcon = projectIcons[project.icon ?? "web"];
   const serial = String(index + 1).padStart(2, "0");
 
   return (
     <article
-      className={`card group home-reveal flex flex-col ${isInView ? "is-visible" : ""}`}
+      className={`card group home-reveal flex h-full flex-col ${isInView ? "is-visible" : ""}`}
       style={{ transitionDelay: `${index * 80}ms` }}
       ref={ref}
     >
@@ -45,9 +40,7 @@ export function ProjectCard({
       <h3 className="mt-5 text-xl font-semibold text-neutral-950 dark:text-white">
         {project.title}
       </h3>
-      <p
-        className={`mt-3 text-sm leading-7 text-neutral-600 dark:text-neutral-400 ${compact ? "" : "min-h-24"}`}
-      >
+      <p className="mt-3 min-h-24 text-sm leading-7 text-neutral-600 dark:text-neutral-400">
         {project.description}
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
@@ -57,7 +50,7 @@ export function ProjectCard({
           </span>
         ))}
       </div>
-      <div className="pt-6 mt-auto flex gap-4 text-sm font-semibold">
+      <div className="project-card-links mt-auto flex gap-4 pt-6 text-sm font-semibold">
         {project.github ? (
           <a
             className="text-neutral-700 transition hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-white"

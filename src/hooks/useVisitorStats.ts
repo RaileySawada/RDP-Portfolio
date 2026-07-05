@@ -3,6 +3,7 @@ import { fallbackStats, recordVisit, type VisitorStats } from "../services/visit
 
 export function useVisitorStats() {
   const [stats, setStats] = useState<VisitorStats>(fallbackStats);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -10,6 +11,7 @@ export function useVisitorStats() {
     void recordVisit().then((nextStats) => {
       if (mounted) {
         setStats(nextStats);
+        setIsLoading(false);
       }
     });
 
@@ -27,5 +29,5 @@ export function useVisitorStats() {
     };
   }, []);
 
-  return stats;
+  return { ...stats, isLoading };
 }

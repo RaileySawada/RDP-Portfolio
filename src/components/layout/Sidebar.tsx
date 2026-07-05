@@ -161,8 +161,8 @@ function ViewerCount({
   );
   const viewerStyles = [
     "bg-white text-neutral-950 dark:bg-neutral-800 dark:text-white",
-    "bg-neutral-950 text-white",
-    "bg-neutral-200 text-neutral-950",
+    "bg-neutral-100 text-neutral-950 dark:bg-neutral-900 dark:text-white",
+    "bg-neutral-200 text-neutral-950 dark:bg-neutral-800 dark:text-white",
   ];
 
   return (
@@ -184,7 +184,7 @@ function ViewerCount({
         <span className="font-mono text-sm font-semibold text-neutral-950 dark:text-white">
           {activeViewers}
         </span>{" "}
-        people viewing now
+        {activeViewers === 1 ? "person" : "people"} viewing now
       </p>
     </div>
   );
@@ -192,33 +192,33 @@ function ViewerCount({
 
 function ViewerAvatar({ variant }: { variant: number }) {
   const hairPaths = [
-    "M5.8 10.3c.5-3.5 3.1-5.1 6-5.1 3.3 0 5.7 1.8 6.4 5.1-1.3-.9-2.6-1.1-4.2-.9-2 .3-3.3 1-5.2.9-1.1-.1-2-.2-3 .0Z",
-    "M5.6 11.3c.2-3.8 3.3-5.9 6.8-5.5 2.7.3 4.8 2 5.4 4.8-2-.7-3.8-.6-5.6-.3-2.5.4-4.3.1-6.6 1Z",
-    "M6.1 10.8c.7-3.6 3.1-5.2 5.9-5.2s5 1.6 5.9 5.1c-1.1-.7-2-.9-3-.7-1.7.2-2.5 1.1-4.1.9-1.6-.1-2.4-.7-4.7-.1Z",
-  ];
-  const mouthPaths = [
-    "M9.8 15.3c1.4 1 3 1 4.4 0",
-    "M10 15.7h4",
-    "M10 15.2c1.2.7 2.8.7 4 0",
+    "M5.7 11.9c.4-4.3 3.2-6.5 6.6-6.5 3.7 0 6 2.8 6.1 6.4-1.4-.8-2.9-2.1-3.8-3.5-2.1 2.1-5.2 3.2-8.9 3.6Z",
+    "M5.8 12c.4-4.2 3.1-6.5 6.2-6.5 3.5 0 5.9 2.4 6.4 6-2.4-.8-4.3-.5-6.4.2-2.1.7-4.1.9-6.2.3Z",
+    "M5.9 11.8c.6-4 3-6.2 6.2-6.2 3.4 0 5.7 2.4 6 6.4-1.6-1.6-3.6-2.4-5.8-2.4-2.5 0-4.6.7-6.4 2.2Z",
   ];
   const nosePaths = [
-    "M12 12.8v1.5l-.7.4",
-    "M12.2 12.8 12 14.4",
-    "M11.9 12.9v1.3l.6.3",
+    "M12.2 13.3l-.5 1.8 1 .1",
+    "M11.8 13.2l.5 1.9-.9.1",
+    "M12 13.2v2",
+  ];
+  const mouthPaths = [
+    "M9.8 16.6c1.3.9 3.1.9 4.4 0",
+    "M10 16.7c1 .6 3 .6 4 0",
+    "M10.1 16.5c1.2.8 2.6.8 3.8 0",
   ];
 
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path className="viewer-avatar-neck" d="M10.1 18.5h3.8v2.2h-3.8z" />
-      <circle className="viewer-avatar-face" cx="12" cy="12.4" r="7.1" />
-      <path className="viewer-avatar-ear" d="M5.2 12.1c-1 .2-1.3 1.9-.2 2.5M18.8 12.1c1 .2 1.3 1.9.2 2.5" />
+      <path className="viewer-avatar-shirt" d="M7.2 21c.9-2.6 2.5-3.9 4.8-3.9s3.9 1.3 4.8 3.9" />
+      <path className="viewer-avatar-neck" d="M10.2 18.1h3.6v2.1h-3.6z" />
+      <path className="viewer-avatar-ear" d="M5.5 12.5c-.8.1-1.1 1.7-.1 2.2M18.5 12.5c.8.1 1.1 1.7.1 2.2" />
+      <circle className="viewer-avatar-face" cx="12" cy="12.6" r="6.6" />
       <path className="viewer-avatar-hair" d={hairPaths[variant]} />
-      <path className="viewer-avatar-brow" d="M8.7 11.2h1.7M13.6 11.2h1.7" />
-      <circle className="viewer-avatar-eye" cx="9.6" cy="12.7" r="0.75" />
-      <circle className="viewer-avatar-eye" cx="14.4" cy="12.7" r="0.75" />
+      <path className="viewer-avatar-brow" d="M8.5 11.7h1.8M13.7 11.7h1.8" />
+      <circle className="viewer-avatar-eye" cx="9.4" cy="13" r="0.72" />
+      <circle className="viewer-avatar-eye" cx="14.6" cy="13" r="0.72" />
       <path className="viewer-avatar-nose" d={nosePaths[variant]} />
       <path className="viewer-avatar-mouth" d={mouthPaths[variant]} />
-      <path className="viewer-avatar-shirt" d="M7.4 21c.8-2.4 2.4-3.6 4.6-3.6s3.8 1.2 4.6 3.6" />
     </svg>
   );
 }
