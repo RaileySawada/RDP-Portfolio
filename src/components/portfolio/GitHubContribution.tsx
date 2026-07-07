@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GitHubCalendar, type Activity } from "react-github-calendar";
 import type { PortfolioData } from "../../data/portfolio";
 import { ArrowIcon } from "../ui/Icons";
@@ -45,6 +45,7 @@ export function GitHubContribution({ portfolio, isDark }: GitHubContributionProp
   const { profile } = portfolio;
   const [activities, setActivities] = useState<Activity[]>([]);
   const [stats, setStats] = useState<ContributionStats | null>(null);
+  const calendarWrapRef = useRef<HTMLDivElement>(null);
   const statsKeyRef = useRef("");
 
   const handleTransformData = useCallback((data: Activity[]) => {
@@ -63,6 +64,18 @@ export function GitHubContribution({ portfolio, isDark }: GitHubContributionProp
   }, []);
 
   const weeks = useMemo(() => buildContributionWeeks(activities), [activities]);
+
+  useEffect(() => {
+    const calendarWrap = calendarWrapRef.current;
+
+    if (!calendarWrap || weeks.length === 0) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      calendarWrap.scrollLeft = calendarWrap.scrollWidth;
+    });
+  }, [weeks.length]);
 
   return (
     <Section
@@ -96,7 +109,7 @@ export function GitHubContribution({ portfolio, isDark }: GitHubContributionProp
         ) : null}
 
         <div className="github-panel-body">
-          <div className="github-calendar-wrap">
+          <div className="github-calendar-wrap" ref={calendarWrapRef}>
             <ContributionDotGrid weeks={weeks} />
             <div className="github-calendar-loader" aria-hidden="true">
               <GitHubCalendar

@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
-import type { Certification, PortfolioData, Project, ProjectIconKey, SkillGroup, SocialLink, StackGroup } from "../../data/portfolio";
+import type { Certification, PortfolioData, Project, SkillGroup, SocialLink, StackGroup } from "../../data/portfolio";
 import { fallbackPortfolio } from "../../data/portfolio";
 import { getPortfolioData, normalizePortfolioData } from "../../services/portfolio";
 import { savePortfolioData } from "../../services/adminPortfolio";
 import type { AdminSession } from "../../services/adminAuth";
-import { uploadAdminImage } from "../../services/adminUpload";
-import { ImageIcon, TrashIcon, UploadIcon } from "../ui/Icons";
+import { PlusIcon, SocialIcon, TrashIcon } from "../ui/Icons";
+import { AdminProjectManager } from "./AdminProjectManager";
+import { AdminCertificationManager } from "./AdminCertificationManager";
 
 type AdminContentEditorProps = {
   session: AdminSession;
@@ -23,31 +24,41 @@ const contentSections: { label: string; value: ContentSection }[] = [
   { label: "Skills", value: "skills" },
 ];
 
-const projectIcons: ProjectIconKey[] = ["system", "docs", "automation", "web"];
-
-const emptyProject: Project = {
-  title: "",
-  description: "",
-  tech: [],
-  status: "",
-  github: "",
-  demo: "",
-  imageUrl: "",
-  icon: "web",
-};
-
-const emptyCertification: Certification = {
-  name: "",
-  issuer: "",
-  date: "",
-  credential: "",
-  imageUrl: "",
-  details: "",
-};
-
 const emptyGroup: StackGroup = {
   category: "",
   items: [],
+};
+
+const linkOptions = ["GitHub", "LinkedIn", "X", "Email", "Portfolio", "Resume", "Facebook", "Instagram", "YouTube", "TikTok", "Discord", "Phone"] as const;
+type LinkOption = (typeof linkOptions)[number];
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+const sectionDetails: Record<Exclude<ContentSection, "projects">, { eyebrow: string; title: string; description: string }> = {
+  home: {
+    eyebrow: "Homepage",
+    title: "Home content",
+    description: "Update the profile details and choose the featured work shown on the first page.",
+  },
+  links: {
+    eyebrow: "Profile",
+    title: "Links",
+    description: "Manage the social and contact links shown across the portfolio.",
+  },
+  certifications: {
+    eyebrow: "Credentials",
+    title: "Certifications",
+    description: "Review certificates exactly as they appear on the public Certifications page.",
+  },
+  stack: {
+    eyebrow: "Toolkit",
+    title: "Stack",
+    description: "Organize the technologies shown on the public Stack page.",
+  },
+  skills: {
+    eyebrow: "Capabilities",
+    title: "Skills",
+    description: "Group practical and soft skills into clean public-facing categories.",
+  },
 };
 
 export function AdminContentEditor({ session }: AdminContentEditorProps) {
@@ -55,9 +66,10 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
   const { section } = useParams();
   const [portfolio, setPortfolio] = useState<PortfolioData>(() => normalizePortfolioData(fallbackPortfolio));
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [uploadingKey, setUploadingKey] = useState("");
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [message, setMessage] = useState("");
+  const hasLoadedPortfolio = useRef(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSection: ContentSection = isContentSection(section) ? section : "home";
 
   useEffect(() => {
@@ -86,6 +98,35 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
     }
   }, [navigate, section]);
 
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    if (!hasLoadedPortfolio.current) {
+      hasLoadedPortfolio.current = true;
+      return;
+    }
+
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+    }
+
+    setSaveStatus("saving");
+    saveTimer.current = setTimeout(() => {
+      savePortfolioData(session, prepareForSave(portfolio)).then((result) => {
+        setSaveStatus(result.ok ? "saved" : "error");
+        setMessage(result.ok ? "" : result.error);
+      });
+    }, 700);
+
+    return () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
+    };
+  }, [isLoading, portfolio, session]);
+
   const stackItems = useMemo(() => Array.from(new Set(portfolio.stackGroups.flatMap((group) => group.items).filter(Boolean))), [portfolio.stackGroups]);
 
   const updateProfile = (key: keyof PortfolioData["profile"], value: string) => {
@@ -113,7 +154,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
       ...current,
       profile: {
         ...current.profile,
-        socials: [...current.profile.socials, { label: "Twitter", href: "" }],
+        socials: [...current.profile.socials, { label: "GitHub", href: "" }],
       },
     }));
   };
@@ -125,6 +166,13 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
         ...current.profile,
         socials: current.profile.socials.filter((_, socialIndex) => socialIndex !== index),
       },
+    }));
+  };
+
+  const addProject = (project: Project) => {
+    setPortfolio((current) => ({
+      ...current,
+      projects: [...current.projects, project],
     }));
   };
 
@@ -144,6 +192,13 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
         certificationNames: current.home?.certificationNames || [],
         stackItems: current.home?.stackItems || [],
       },
+    }));
+  };
+
+  const addCertification = (certification: Certification) => {
+    setPortfolio((current) => ({
+      ...current,
+      certifications: [...current.certifications, certification],
     }));
   };
 
@@ -194,214 +249,127 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
     setPortfolio((current) => toggleFeaturedValue(current, "stackItems", item, checked));
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    setMessage("");
-
-    const result = await savePortfolioData(session, prepareForSave(portfolio));
-
-    setIsSaving(false);
-    setMessage(result.ok ? "Portfolio content saved." : result.error);
-  };
-
-  const handleProjectImageUpload = async (index: number, file: File | undefined) => {
-    if (!file) {
-      return;
-    }
-
-    const key = `project-${index}`;
-    setUploadingKey(key);
-    setMessage("");
-
-    const result = await uploadAdminImage(session, file, "portfolio/projects");
-
-    setUploadingKey("");
-    if (result.ok) {
-      updateProject(index, { imageUrl: result.url });
-      setMessage("Project image uploaded.");
-    } else {
-      setMessage(result.error);
-    }
-  };
-
-  const handleCertificationImageUpload = async (index: number, file: File | undefined) => {
-    if (!file) {
-      return;
-    }
-
-    const key = `certification-${index}`;
-    setUploadingKey(key);
-    setMessage("");
-
-    const result = await uploadAdminImage(session, file, "portfolio/certifications");
-
-    setUploadingKey("");
-    if (result.ok) {
-      updateCertification(index, { imageUrl: result.url });
-      setMessage("Certification image uploaded.");
-    } else {
-      setMessage(result.error);
-    }
-  };
-
   const renderContentSection = () => {
     if (activeSection === "home") {
-      return (
-        <>
-          <EditorPanel title="Home profile">
-            <AdminInput label="Preferred job title" value={portfolio.profile.title} onChange={(value) => updateProfile("title", value)} />
-            <AdminTextarea label="Intro text" value={portfolio.profile.summary} onChange={(value) => updateProfile("summary", value)} />
-            <AdminInput label="Location" value={portfolio.profile.location} onChange={(value) => updateProfile("location", value)} />
-            <AdminInput label="Email" value={portfolio.profile.email} onChange={(value) => updateProfile("email", value)} />
-            <AdminInput label="GitHub username" value={portfolio.profile.githubUser} onChange={(value) => updateProfile("githubUser", value)} />
-          </EditorPanel>
+      const homeStats = [
+        { label: "Featured projects", value: portfolio.home?.projectTitles.length || 0 },
+        { label: "Featured certificates", value: portfolio.home?.certificationNames.length || 0 },
+        { label: "Featured stack", value: portfolio.home?.stackItems.length || 0 },
+      ];
 
-          <EditorPanel title="Homepage showcase">
-            <Checklist title="Projects" values={portfolio.projects.map((project) => project.title)} selected={portfolio.home?.projectTitles || []} onToggle={toggleFeaturedProject} />
-            <Checklist
-              title="Certifications"
-              values={portfolio.certifications.map((certification) => certification.name)}
-              selected={portfolio.home?.certificationNames || []}
-              onToggle={toggleFeaturedCertification}
-            />
-            <Checklist title="Stack" values={stackItems} selected={portfolio.home?.stackItems || []} onToggle={toggleFeaturedStack} />
-          </EditorPanel>
-        </>
+      return (
+        <AdminSectionLayout details={sectionDetails.home} stats={homeStats}>
+          <div className="admin-editor-split">
+            <EditorPanel title="Profile basics" description="These fields power the main intro and contact block.">
+              <AdminInput label="Preferred job title" value={portfolio.profile.title} onChange={(value) => updateProfile("title", value)} />
+              <AdminTextarea label="Intro text" value={portfolio.profile.summary} onChange={(value) => updateProfile("summary", value)} />
+              <div className="admin-editor-row admin-editor-row-2">
+                <AdminInput label="Location" value={portfolio.profile.location} onChange={(value) => updateProfile("location", value)} />
+                <AdminInput label="Email" value={portfolio.profile.email} onChange={(value) => updateProfile("email", value)} />
+              </div>
+              <AdminInput label="GitHub username" value={portfolio.profile.githubUser} onChange={(value) => updateProfile("githubUser", value)} />
+            </EditorPanel>
+
+            <EditorPanel title="Homepage showcase" description="Pick the compact highlights visitors should see first.">
+              <div className="admin-showcase-grid">
+                <Checklist title="Projects" values={portfolio.projects.map((project) => project.title)} selected={portfolio.home?.projectTitles || []} onToggle={toggleFeaturedProject} />
+                <Checklist
+                  title="Certifications"
+                  values={portfolio.certifications.map((certification) => certification.name)}
+                  selected={portfolio.home?.certificationNames || []}
+                  onToggle={toggleFeaturedCertification}
+                />
+                <Checklist title="Stack" values={stackItems} selected={portfolio.home?.stackItems || []} onToggle={toggleFeaturedStack} />
+              </div>
+            </EditorPanel>
+          </div>
+        </AdminSectionLayout>
       );
     }
 
     if (activeSection === "links") {
+      const linkStats = [
+        { label: "Total links", value: portfolio.profile.socials.length },
+        { label: "Ready links", value: portfolio.profile.socials.filter((social) => social.href.trim()).length },
+        { label: "Unique labels", value: new Set(portfolio.profile.socials.map((social) => social.label.trim()).filter(Boolean)).size },
+      ];
+
       return (
-        <EditorPanel
-          title="Links"
-          count={portfolio.profile.socials.length}
-          action={
-            <button className="button-secondary admin-inline-button" type="button" onClick={addSocial}>
-              Add link
-            </button>
-          }
-        >
-          {portfolio.profile.socials.length === 0 ? <EmptyState label="No links yet. Add your first one." /> : null}
-          {portfolio.profile.socials.map((social, index) => (
-            <div className="admin-editor-item" key={`${social.label}-${index}`}>
-              <div className="admin-editor-item-head">
-                <span className="admin-editor-item-index">Link {String(index + 1).padStart(2, "0")}</span>
-                <button className="admin-icon-button" type="button" aria-label="Delete link" onClick={() => removeSocial(index)}>
-                  <TrashIcon />
-                </button>
-              </div>
-              <div className="admin-editor-row admin-editor-row-2">
-                <AdminInput label="Label" value={social.label} onChange={(value) => updateSocial(index, "label", value)} />
-                <AdminInput label="URL" value={social.href} onChange={(value) => updateSocial(index, "href", value)} />
-              </div>
+        <AdminSectionLayout details={sectionDetails.links} stats={linkStats}>
+          <EditorPanel
+            title="Link library"
+            count={portfolio.profile.socials.length}
+            description="Use clear labels and full URLs so the public buttons stay reliable."
+            action={
+              <button className="admin-compact-add-button" type="button" onClick={addSocial}>
+                <PlusIcon className="h-4 w-4" />
+                <span>Add link</span>
+              </button>
+            }
+          >
+            {portfolio.profile.socials.length === 0 ? <EmptyState label="No links yet. Add your first one." /> : null}
+            <div className="admin-link-list">
+              {portfolio.profile.socials.map((social, index) => (
+                <div className="admin-link-row" key={`link-${index}`}>
+                  <span className="admin-link-row-icon" aria-hidden="true">
+                    <SocialIcon label={normalizeLinkLabel(social.label)} className="h-4 w-4" />
+                  </span>
+                  <label className="admin-field">
+                    <span>Type</span>
+                    <select value={normalizeLinkLabel(social.label)} onChange={(event) => updateSocial(index, "label", event.target.value)}>
+                      {linkOptions.map((option) => (
+                        <option value={option} key={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <AdminInput label="URL" value={social.href} onChange={(value) => updateSocial(index, "href", value)} />
+                  <button className="admin-icon-button" type="button" aria-label={`Delete ${social.label || "link"}`} onClick={() => removeSocial(index)}>
+                    <TrashIcon />
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </EditorPanel>
+          </EditorPanel>
+        </AdminSectionLayout>
       );
     }
 
     if (activeSection === "projects") {
       return (
-        <EditorPanel
-          title="Projects"
-          count={portfolio.projects.length}
-          action={
-            <button className="button-secondary admin-inline-button" type="button" onClick={() => setPortfolio((current) => ({ ...current, projects: [...current.projects, emptyProject] }))}>
-              Add project
-            </button>
-          }
-        >
-          {portfolio.projects.length === 0 ? <EmptyState label="No projects yet. Add your first one." /> : null}
-          {portfolio.projects.map((project, index) => (
-            <div className="admin-editor-item" key={`${project.title}-${index}`}>
-              <div className="admin-editor-item-head">
-                <span className="admin-editor-item-index">{project.title.trim() || `Project ${String(index + 1).padStart(2, "0")}`}</span>
-                <button className="admin-icon-button" type="button" aria-label="Delete project" onClick={() => removeProject(index)}>
-                  <TrashIcon />
-                </button>
-              </div>
-              <AdminInput label="Title" value={project.title} onChange={(value) => updateProject(index, { title: value })} />
-              <AdminTextarea label="Description" value={project.description} onChange={(value) => updateProject(index, { description: value })} />
-              <div className="admin-editor-row">
-                <AdminInput label="Status" value={project.status} onChange={(value) => updateProject(index, { status: value })} />
-                <AdminInput label="GitHub" value={project.github} onChange={(value) => updateProject(index, { github: value })} />
-                <AdminInput label="Demo / npm / deployment" value={project.demo || ""} onChange={(value) => updateProject(index, { demo: value })} />
-              </div>
-              <ImageField
-                label="Project image"
-                value={project.imageUrl || ""}
-                isUploading={uploadingKey === `project-${index}`}
-                onChange={(value) => updateProject(index, { imageUrl: value })}
-                onUpload={(file) => handleProjectImageUpload(index, file)}
-              />
-              <div className="admin-editor-row admin-editor-row-2">
-                <AdminTextarea label="Tech, one per line" value={toLines(project.tech)} onChange={(value) => updateProject(index, { tech: fromLines(value) })} />
-                <label className="admin-field">
-                  <span>Icon</span>
-                  <select value={project.icon || "web"} onChange={(event) => updateProject(index, { icon: event.target.value as ProjectIconKey })}>
-                    {projectIcons.map((icon) => (
-                      <option value={icon} key={icon}>
-                        {icon}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </div>
-          ))}
-        </EditorPanel>
+        <AdminProjectManager
+          session={session}
+          projects={portfolio.projects}
+          onCreate={addProject}
+          onUpdate={(index, project) => updateProject(index, project)}
+          onRemove={removeProject}
+        />
       );
     }
 
     if (activeSection === "certifications") {
       return (
-        <EditorPanel
-          title="Certifications"
-          count={portfolio.certifications.length}
-          action={
-            <button
-              className="button-secondary admin-inline-button"
-              type="button"
-              onClick={() => setPortfolio((current) => ({ ...current, certifications: [...current.certifications, emptyCertification] }))}
-            >
-              Add certification
-            </button>
-          }
-        >
-          {portfolio.certifications.length === 0 ? <EmptyState label="No certifications yet. Add your first one." /> : null}
-          {portfolio.certifications.map((certification, index) => (
-            <div className="admin-editor-item" key={`${certification.name}-${index}`}>
-              <div className="admin-editor-item-head">
-                <span className="admin-editor-item-index">{certification.name.trim() || `Certification ${String(index + 1).padStart(2, "0")}`}</span>
-                <button className="admin-icon-button" type="button" aria-label="Delete certification" onClick={() => removeCertification(index)}>
-                  <TrashIcon />
-                </button>
-              </div>
-              <div className="admin-editor-row">
-                <AdminInput label="Name" value={certification.name} onChange={(value) => updateCertification(index, { name: value })} />
-                <AdminInput label="Issuer" value={certification.issuer} onChange={(value) => updateCertification(index, { issuer: value })} />
-                <AdminInput label="Date" value={certification.date} onChange={(value) => updateCertification(index, { date: value })} />
-              </div>
-              <AdminInput label="Credential link" value={certification.credential || ""} onChange={(value) => updateCertification(index, { credential: value })} />
-              <ImageField
-                label="Certificate image"
-                value={certification.imageUrl || ""}
-                isUploading={uploadingKey === `certification-${index}`}
-                onChange={(value) => updateCertification(index, { imageUrl: value })}
-                onUpload={(file) => handleCertificationImageUpload(index, file)}
-              />
-              <AdminTextarea label="Details" value={certification.details || ""} onChange={(value) => updateCertification(index, { details: value })} />
-            </div>
-          ))}
-        </EditorPanel>
+        <AdminSectionLayout details={sectionDetails.certifications}>
+          <AdminCertificationManager
+            session={session}
+            recipientName={portfolio.profile.name}
+            certifications={portfolio.certifications}
+            onCreate={addCertification}
+            onUpdate={(index, certification) => updateCertification(index, certification)}
+            onRemove={removeCertification}
+          />
+        </AdminSectionLayout>
       );
     }
 
     if (activeSection === "stack") {
       return (
         <GroupEditor
-          title="Stack"
+          details={sectionDetails.stack}
           groups={portfolio.stackGroups}
+          itemLabel="technology"
+          saveStatus={saveStatus}
           onAdd={() => setPortfolio((current) => ({ ...current, stackGroups: [...current.stackGroups, emptyGroup] }))}
           onRemove={(index) => removeGroup("stackGroups", index)}
           onUpdate={(index, patch) => updateGroup("stackGroups", index, patch)}
@@ -411,8 +379,10 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
 
     return (
       <GroupEditor
-        title="Skills"
+        details={sectionDetails.skills}
         groups={portfolio.skillGroups || []}
+        itemLabel="skill"
+        saveStatus={saveStatus}
         onAdd={() => setPortfolio((current) => ({ ...current, skillGroups: [...(current.skillGroups || []), emptyGroup] }))}
         onRemove={(index) => removeGroup("skillGroups", index)}
         onUpdate={(index, patch) => updateGroup("skillGroups", index, patch)}
@@ -421,18 +391,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
   };
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <header className="admin-dashboard-header">
-        <div>
-          <p className="metadata text-neutral-500 dark:text-neutral-500">Portfolio</p>
-          <h1>Content Editor</h1>
-        </div>
-        <button className="button-primary admin-save-button" type="button" onClick={handleSave} disabled={isSaving || isLoading}>
-          {isSaving ? <span className="admin-spinner" aria-hidden="true" /> : null}
-          <span>{isSaving ? "Saving..." : "Save changes"}</span>
-        </button>
-      </header>
-
+    <div className="admin-content-shell mx-auto max-w-6xl">
       {message ? <p className="admin-editor-message">{message}</p> : null}
 
       {renderContentSection()}
@@ -440,12 +399,51 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
   );
 }
 
-function EditorPanel({ title, count, action, children }: { title: string; count?: number; action?: ReactNode; children: ReactNode }) {
+function AdminSectionLayout({
+  details,
+  stats,
+  action,
+  children,
+}: {
+  details: { eyebrow: string; title: string; description: string };
+  stats?: { label: string; value: number }[];
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="admin-section-shell">
+      <header className="admin-section-header">
+        <div>
+          <p className="metadata text-neutral-500 dark:text-neutral-500">{details.eyebrow}</p>
+          <h2>{details.title}</h2>
+          <p>{details.description}</p>
+        </div>
+        {action}
+      </header>
+      {stats?.length ? (
+        <div className="admin-section-stats" aria-label={`${details.title} summary`}>
+          {stats.map((stat) => (
+            <article key={stat.label}>
+              <strong>{stat.value}</strong>
+              <span>{stat.label}</span>
+            </article>
+          ))}
+        </div>
+      ) : null}
+      <div className="admin-section-body">{children}</div>
+    </section>
+  );
+}
+
+function EditorPanel({ title, description, count, action, children }: { title: string; description?: string; count?: number; action?: ReactNode; children: ReactNode }) {
   return (
     <section className="admin-editor-panel">
       <div className="admin-editor-panel-heading">
         <div className="admin-editor-panel-title">
-          <h2>{title}</h2>
+          <div>
+            <h2>{title}</h2>
+            {description ? <p>{description}</p> : null}
+          </div>
           {typeof count === "number" ? <span className="admin-editor-panel-count">{count}</span> : null}
         </div>
         {action}
@@ -477,62 +475,17 @@ function AdminTextarea({ label, value, onChange }: { label: string; value: strin
   );
 }
 
-function ImageField({
-  label,
-  value,
-  isUploading,
-  onChange,
-  onUpload,
-}: {
-  label: string;
-  value: string;
-  isUploading: boolean;
-  onChange: (value: string) => void;
-  onUpload: (file: File | undefined) => void;
-}) {
-  return (
-    <div className="admin-image-field">
-      <div className="admin-image-preview">
-        {value ? (
-          <img src={value} alt="" />
-        ) : (
-          <span className="admin-image-placeholder">
-            <ImageIcon className="h-6 w-6" />
-          </span>
-        )}
-      </div>
-      <div className="admin-image-controls">
-        <AdminInput label={`${label} URL`} value={value} onChange={onChange} />
-        <label className="admin-upload-button">
-          <input
-            accept="image/*"
-            type="file"
-            disabled={isUploading}
-            onChange={(event) => {
-              onUpload(event.target.files?.[0]);
-              event.currentTarget.value = "";
-            }}
-          />
-          {isUploading ? <span className="admin-spinner" aria-hidden="true" /> : <UploadIcon className="h-4 w-4" />}
-          <span>{isUploading ? "Uploading..." : "Upload image"}</span>
-        </label>
-        {value ? (
-          <button className="admin-image-clear" type="button" onClick={() => onChange("")}>
-            <TrashIcon className="h-3.5 w-3.5" />
-            <span>Remove</span>
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 function Checklist({ title, values, selected, onToggle }: { title: string; values: string[]; selected: string[]; onToggle: (value: string, checked: boolean) => void }) {
+  const availableValues = values.filter(Boolean);
+
   return (
     <div className="admin-checklist">
-      <h3>{title}</h3>
+      <div className="admin-checklist-head">
+        <h3>{title}</h3>
+        <span>{selected.length}/{availableValues.length}</span>
+      </div>
       <div>
-        {values.filter(Boolean).map((value) => (
+        {availableValues.map((value) => (
           <label key={value}>
             <input type="checkbox" checked={selected.includes(value)} onChange={(event) => onToggle(value, event.target.checked)} />
             <span>{value}</span>
@@ -544,42 +497,100 @@ function Checklist({ title, values, selected, onToggle }: { title: string; value
 }
 
 function GroupEditor({
-  title,
+  details,
   groups,
+  itemLabel,
+  saveStatus,
   onAdd,
   onRemove,
   onUpdate,
 }: {
-  title: string;
+  details: { eyebrow: string; title: string; description: string };
   groups: StackGroup[];
+  itemLabel: string;
+  saveStatus: SaveStatus;
   onAdd: () => void;
   onRemove: (index: number) => void;
   onUpdate: (index: number, patch: Partial<StackGroup>) => void;
 }) {
+  const [itemDrafts, setItemDrafts] = useState<Record<number, string>>({});
+  const totalItems = groups.reduce((total, group) => total + group.items.length, 0);
+  const stats = [
+    { label: "Categories", value: groups.length },
+    { label: `${itemLabel}s`, value: totalItems },
+    { label: "Complete groups", value: groups.filter((group) => group.category.trim() && group.items.length).length },
+  ];
+  const addItemToGroup = (index: number) => {
+    const nextItem = (itemDrafts[index] || "").trim();
+
+    if (!nextItem) {
+      return;
+    }
+
+    const currentItems = groups[index]?.items || [];
+    if (!currentItems.some((item) => item.toLowerCase() === nextItem.toLowerCase())) {
+      onUpdate(index, { items: [...currentItems, nextItem] });
+    }
+
+    setItemDrafts((current) => ({ ...current, [index]: "" }));
+  };
+  const removeItemFromGroup = (groupIndex: number, itemToRemove: string) => {
+    const currentItems = groups[groupIndex]?.items || [];
+    onUpdate(groupIndex, { items: currentItems.filter((item) => item !== itemToRemove) });
+  };
+
   return (
-    <EditorPanel
-      title={title}
-      count={groups.length}
+    <AdminSectionLayout
+      details={details}
+      stats={stats}
       action={
-        <button className="button-secondary admin-inline-button" type="button" onClick={onAdd}>
-          Add category
+        <button className="admin-manager-add-button" type="button" onClick={onAdd}>
+          <PlusIcon className="h-4 w-4" />
+          <span>Add category</span>
         </button>
       }
     >
-      {groups.length === 0 ? <EmptyState label="No categories yet. Add your first one." /> : null}
-      {groups.map((group, index) => (
-        <div className="admin-editor-item" key={`${group.category}-${index}`}>
-          <div className="admin-editor-item-head">
-            <span className="admin-editor-item-index">{group.category.trim() || `Category ${String(index + 1).padStart(2, "0")}`}</span>
-            <button className="admin-icon-button" type="button" aria-label="Delete category" onClick={() => onRemove(index)}>
-              <TrashIcon />
-            </button>
-          </div>
-          <AdminInput label="Category" value={group.category} onChange={(value) => onUpdate(index, { category: value })} />
-          <AdminTextarea label="Items, one per line" value={toLines(group.items)} onChange={(value) => onUpdate(index, { items: fromLines(value) })} />
+      <EditorPanel title={`${details.title} categories`} count={groups.length} description={`Keep each ${itemLabel} group short, scannable, and easy to edit.`}>
+        {groups.length === 0 ? <EmptyState label="No categories yet. Add your first one." /> : null}
+        <div className="admin-category-list">
+          {groups.map((group, index) => (
+            <div className="admin-category-card" key={`category-${index}`}>
+              <div className="admin-editor-item-head">
+                <span className="admin-editor-item-index">{group.category.trim() || `Category ${String(index + 1).padStart(2, "0")}`}</span>
+                <div className="admin-category-actions">
+                  {saveStatus !== "idle" ? <span className={`admin-category-save-status is-${saveStatus}`}>{saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved" : "Save failed"}</span> : null}
+                  <button className="admin-icon-button" type="button" aria-label="Delete category" onClick={() => onRemove(index)}>
+                    <TrashIcon />
+                  </button>
+                </div>
+              </div>
+              <AdminInput label="Category" value={group.category} onChange={(value) => onUpdate(index, { category: value })} />
+              <div className="admin-chip-editor" aria-label={`${group.category || "Category"} ${itemLabel}s`}>
+                {group.items.map((item) => (
+                  <span className="admin-editable-chip" key={item}>
+                    {item}
+                    <button type="button" aria-label={`Remove ${item}`} onClick={() => removeItemFromGroup(index, item)}>
+                      <TrashIcon className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  value={itemDrafts[index] || ""}
+                  onChange={(event) => setItemDrafts((current) => ({ ...current, [index]: event.target.value }))}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addItemToGroup(index);
+                    }
+                  }}
+                  placeholder={`Add ${itemLabel}`}
+                />
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
-    </EditorPanel>
+      </EditorPanel>
+    </AdminSectionLayout>
   );
 }
 
@@ -613,15 +624,16 @@ function trimOptionalFields<T extends Record<string, unknown>>(item: T): T {
   return Object.fromEntries(Object.entries(item).filter(([, value]) => value !== "")) as T;
 }
 
-function toLines(items: string[]) {
-  return items.join("\n");
-}
+function normalizeLinkLabel(label: string): LinkOption {
+  if (label === "Twitter") {
+    return "X";
+  }
 
-function fromLines(value: string) {
-  return value
-    .split(/\n|,/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+  if (label === "Website") {
+    return "Portfolio";
+  }
+
+  return linkOptions.find((option) => option === label) || "Email";
 }
 
 function isContentSection(section: string | undefined): section is ContentSection {

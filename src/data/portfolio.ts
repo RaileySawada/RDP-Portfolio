@@ -137,20 +137,36 @@ export const fallbackPortfolio: PortfolioData = {
   ],
   stackGroups: [
     {
-      category: "Frontend",
-      items: ["React", "TypeScript", "JavaScript", "Next.js", "Vue", "HTML", "CSS", "Tailwind CSS"],
+      category: "Languages",
+      items: ["JavaScript", "TypeScript", "PHP", "Bash"],
     },
     {
-      category: "Backend",
-      items: ["PHP", "Node.js", "REST APIs", "Bash"],
+      category: "Frontend Frameworks",
+      items: ["React", "Next.js", "Vue"],
     },
     {
-      category: "Database",
+      category: "Markup & Styling",
+      items: ["HTML", "CSS", "Tailwind CSS"],
+    },
+    {
+      category: "Backend & APIs",
+      items: ["Node.js", "REST APIs", "XML"],
+    },
+    {
+      category: "Databases",
       items: ["MySQL", "PostgreSQL", "Firestore"],
     },
     {
-      category: "Platforms",
-      items: ["Firebase", "Cloudinary", "Netlify", "Git"],
+      category: "Cloud & Storage",
+      items: ["Firebase", "Cloudinary", "Netlify"],
+    },
+    {
+      category: "Developer Tools",
+      items: ["Git"],
+    },
+    {
+      category: "Data & Decision Systems",
+      items: ["DSS", "Data Analytics", "Analytics", "AI Support"],
     },
   ],
   skillGroups: [

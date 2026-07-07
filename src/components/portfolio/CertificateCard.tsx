@@ -1,5 +1,6 @@
 import { useInView } from "../../hooks/useInView";
 import type { PortfolioData } from "../../data/portfolio";
+import type { CSSProperties } from "react";
 import { ArrowIcon, SealIcon } from "../ui/Icons";
 
 type CertificateCardProps = {
@@ -18,7 +19,7 @@ export function CertificateCard({
   return (
     <div
       className={`certificate-card flex flex-col ${isInView ? "is-visible" : ""}`}
-      style={{ transitionDelay: `${index * 90}ms` }}
+      style={{ "--certificate-delay": `${index * 90}ms` } as CSSProperties}
       ref={ref}
     >
       <span

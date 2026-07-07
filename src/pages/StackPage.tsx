@@ -22,12 +22,17 @@ export function StackPage({ portfolio }: StackPageProps) {
 
   return (
     <Section id="stack" title="Stack" eyebrow="What I build with">
-      <div className="stack-overview-grid">
-        <Metric label="Categories" value={stats.categories.toString()} />
-        <Metric label="Technologies" value={stats.tools.toString()} />
-        <Metric label="Core stack" value={stats.core.toString()} />
+      <div className="stack-page-shell">
+        <span className="stack-decor-dot stack-decor-dot-a" aria-hidden="true" />
+        <span className="stack-decor-dot stack-decor-dot-b" aria-hidden="true" />
+        <span className="stack-decor-dot stack-decor-dot-c" aria-hidden="true" />
+        <div className="stack-overview-grid">
+          <Metric label="Categories" value={stats.categories.toString()} />
+          <Metric label="Technologies" value={stats.tools.toString()} />
+          <Metric label="Featured stack" value={stats.core.toString()} />
+        </div>
+        <StackRows portfolio={portfolio} />
       </div>
-      <StackRows portfolio={portfolio} />
     </Section>
   );
 }

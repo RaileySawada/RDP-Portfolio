@@ -4,6 +4,7 @@ import { profile } from "../../data/portfolio";
 import type { ThemePreference } from "../../hooks/useTheme";
 import { clearAdminSession, type AdminSession } from "../../services/adminAuth";
 import { fetchAdminAnalytics, fallbackAnalytics, type AdminAnalytics } from "../../services/adminAnalytics";
+import { MenuIcon } from "../ui/Icons";
 import { AdminActivityTable } from "./AdminActivityTable";
 import { AdminContentEditor } from "./AdminContentEditor";
 import { AdminSidebar, type AdminView } from "./AdminSidebar";
@@ -26,6 +27,7 @@ export function AdminDashboard({ session, selectedTheme, onSelectTheme, onLogout
   const { view } = useParams();
   const [analytics, setAnalytics] = useState<AdminAnalytics>(fallbackAnalytics);
   const [isLoading, setIsLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const activeView: AdminView = isAdminView(view) ? view : "analytics";
 
   useEffect(() => {
@@ -66,10 +68,20 @@ export function AdminDashboard({ session, selectedTheme, onSelectTheme, onLogout
 
   return (
     <section className="admin-dashboard min-h-screen">
+      <button
+        className="admin-menu-button"
+        type="button"
+        aria-label="Open admin navigation"
+        onClick={() => setSidebarOpen(true)}
+      >
+        <MenuIcon />
+      </button>
       <AdminSidebar
         activeView={activeView}
         adminProfile={analytics.adminProfile}
+        isOpen={sidebarOpen}
         selectedTheme={selectedTheme}
+        onClose={() => setSidebarOpen(false)}
         onSelectTheme={onSelectTheme}
         onSelectView={handleSelectView}
         onLogout={handleLogout}
@@ -90,16 +102,22 @@ export function AdminDashboard({ session, selectedTheme, onSelectTheme, onLogout
 function AdminAnalyticsView({ analytics, isLoading }: { analytics: AdminAnalytics; isLoading: boolean }) {
   return (
     <div className="admin-analytics mx-auto max-w-6xl">
+      <span className="admin-decor-dot admin-decor-dot-a" aria-hidden="true" />
+      <span className="admin-decor-dot admin-decor-dot-b" aria-hidden="true" />
       <header className="admin-dashboard-header">
         <div>
           <p className="metadata text-neutral-500 dark:text-neutral-500">Viewers</p>
           <h1>Viewer Analytics</h1>
         </div>
-        <span>{isLoading ? "Syncing" : "Live"}</span>
+        <span className={`admin-status-pill ${isLoading ? "" : "is-live"}`}>
+          <i aria-hidden="true" />
+          {isLoading ? "Syncing" : "Live"}
+        </span>
       </header>
 
       <div className="admin-overview-panel">
         <div className="admin-overview-main">
+          <span className="admin-overview-mask" aria-hidden="true" />
           <p>Total viewers</p>
           <strong>{analytics.totalViewers.toLocaleString()}</strong>
           <span>Updated {analytics.lastUpdatedAt ? new Date(analytics.lastUpdatedAt).toLocaleTimeString() : "just now"}</span>
@@ -158,6 +176,7 @@ function AdminAccountView({ adminProfile }: { adminProfile: AdminAnalytics["admi
         </div>
       </header>
       <div className="admin-account-panel">
+        <span className="admin-decor-dot admin-decor-dot-c" aria-hidden="true" />
         <div className="admin-account-image">
           {profile.imageUrl ? (
             <img src={profile.imageUrl} alt={profile.name} />

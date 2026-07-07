@@ -226,6 +226,31 @@ export function ImageIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+export function PlusIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function AlertIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M12 3.5 21.5 20h-19L12 3.5Z" strokeLinejoin="round" />
+      <path d="M12 10v4.2M12 17.3h.01" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function SparkIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function SocialIcon({ label, className = "h-4 w-4" }: IconProps & { label: string }) {
   if (label === "GitHub") {
     return (
@@ -247,6 +272,60 @@ export function SocialIcon({ label, className = "h-4 w-4" }: IconProps & { label
     return (
       <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M14.2 10.3 22.5 1h-2l-7.2 8.1L7.6 1H1l8.7 12.3L1 23h2l7.6-8.5 6.1 8.5H23l-8.8-12.7Zm-2.7 3-1-1.4-7-9.4h3.1l5.6 7.6 1 1.4 7.4 10h-3.1l-6-8.2Z" />
+      </svg>
+    );
+  }
+
+  if (label === "Portfolio" || label === "Resume") {
+    return <ExternalLinkIcon className={className} />;
+  }
+
+  if (label === "Phone") {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path d="M7 4h3l1.5 4-2 1.2c1 2.2 2.1 3.7 4.3 4.8l1.2-2h4l1 3c.2.8-.1 1.6-.8 2.1-1 .7-2.1 1-3.4.9C10 17.4 6.6 14 5.1 8.2 4.8 7 5.1 5.9 5.8 4.9 6.1 4.4 6.5 4 7 4Z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (label === "Facebook") {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M14 8.2V6.8c0-.7.5-1.1 1.2-1.1H17V2.3c-.7-.1-1.6-.2-2.6-.2-2.6 0-4.4 1.6-4.4 4.4v1.7H7v3.7h3V22h4v-10.1h2.8l.5-3.7H14Z" />
+      </svg>
+    );
+  }
+
+  if (label === "Instagram") {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <rect x="4" y="4" width="16" height="16" rx="4" />
+        <circle cx="12" cy="12" r="3.5" />
+        <path d="M17 7.2h.01" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (label === "YouTube") {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M21.5 7.2c-.2-1-.9-1.7-1.9-1.9C18 5 12 5 12 5s-6 0-7.6.3c-1 .2-1.7.9-1.9 1.9C2.2 8.9 2.2 12 2.2 12s0 3.1.3 4.8c.2 1 .9 1.7 1.9 1.9C6 19 12 19 12 19s6 0 7.6-.3c1-.2 1.7-.9 1.9-1.9.3-1.7.3-4.8.3-4.8s0-3.1-.3-4.8ZM10 15.1V8.9l5.2 3.1-5.2 3.1Z" />
+      </svg>
+    );
+  }
+
+  if (label === "TikTok") {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M15.7 3c.4 2.5 1.8 4 4.3 4.2v3.4c-1.6 0-3.1-.5-4.3-1.4v5.8c0 3.4-2.3 5.7-5.6 5.7-3 0-5.1-2-5.1-4.8 0-3.1 2.4-5 5.7-5 .4 0 .7 0 1 .1v3.5c-.3-.1-.7-.2-1.1-.2-1.2 0-2 .6-2 1.6 0 1 .7 1.6 1.7 1.6 1.1 0 1.8-.7 1.8-2.1V3h3.6Z" />
+      </svg>
+    );
+  }
+
+  if (label === "Discord") {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M18.8 5.5A15 15 0 0 0 15.2 4l-.4.8a13 13 0 0 1 3.2 1.6 11.2 11.2 0 0 0-9.9 0 13 13 0 0 1 3.2-1.6L10.8 4a15 15 0 0 0-3.6 1.5C4.9 8.9 4.3 12.1 4.6 15.3A14.6 14.6 0 0 0 9 17.5l.9-1.2c-.5-.2-1-.4-1.4-.7l.3-.2a10.2 10.2 0 0 0 6.4 0l.3.2c-.5.3-.9.5-1.4.7l.9 1.2a14.6 14.6 0 0 0 4.4-2.2c.4-3.7-.6-6.8-2.6-9.8ZM9.6 13.8c-.8 0-1.4-.7-1.4-1.5s.6-1.5 1.4-1.5 1.4.7 1.4 1.5-.6 1.5-1.4 1.5Zm4.8 0c-.8 0-1.4-.7-1.4-1.5s.6-1.5 1.4-1.5 1.4.7 1.4 1.5-.6 1.5-1.4 1.5Z" />
       </svg>
     );
   }

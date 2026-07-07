@@ -1,3 +1,4 @@
+import { useRef, type ReactNode } from "react";
 import { Link } from "react-router";
 import type { PortfolioData } from "../data/portfolio";
 import { GitHubContribution } from "../components/portfolio/GitHubContribution";
@@ -42,19 +43,21 @@ function OverviewProjects({ portfolio }: { portfolio: PortfolioData }) {
         </Link>
       }
     >
-      <div className="grid gap-4 lg:grid-cols-3">
+      <HomeCarousel label="Featured projects">
         {featuredProjects.map((project, index) => (
-          <Reveal delay={index * 80} key={project.title}>
+          <div className="home-carousel-item home-carousel-item-project" key={project.title}>
             <ProjectCard project={project} index={index} />
-          </Reveal>
+          </div>
         ))}
-      </div>
+      </HomeCarousel>
     </Section>
   );
 }
 
 function OverviewStack({ portfolio }: { portfolio: PortfolioData }) {
-  const stackItems = getFeaturedStrings(portfolio.stackGroups.flatMap((group) => group.items), portfolio.home?.stackItems || [], 24);
+  const allStackItems = Array.from(new Set(portfolio.stackGroups.flatMap((group) => group.items)));
+  const stackItems = getFeaturedStrings(allStackItems, portfolio.home?.stackItems || [], 12);
+  const hasMoreStackItems = stackItems.length < allStackItems.length;
 
   return (
     <Section
@@ -67,12 +70,17 @@ function OverviewStack({ portfolio }: { portfolio: PortfolioData }) {
         </Link>
       }
     >
-      <Reveal as="article" className="stack-cloud" delay={80}>
+      <Reveal as="article" className="stack-cloud stack-cloud-home" delay={80}>
         {stackItems.map((item, index) => (
           <span className="stack-pill" style={{ transitionDelay: `${160 + index * 28}ms` }} key={item}>
             {item}
           </span>
         ))}
+        {hasMoreStackItems ? (
+          <Link className="stack-pill stack-more-pill" style={{ transitionDelay: `${160 + stackItems.length * 28}ms` }} to="/stack">
+            + more
+          </Link>
+        ) : null}
       </Reveal>
     </Section>
   );
@@ -98,12 +106,59 @@ function OverviewCertifications({ portfolio }: { portfolio: PortfolioData }) {
         </Link>
       }
     >
-      <div className="certificate-grid grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <HomeCarousel label="Featured certifications">
         {featuredCertifications.map((certification, index) => (
-          <CertificateCard certification={certification} recipientName={profile.name} key={certification.name} index={index} />
+          <div className="home-carousel-item home-carousel-item-certificate" key={certification.name}>
+            <CertificateCard certification={certification} recipientName={profile.name} index={index} />
+          </div>
         ))}
-      </div>
+      </HomeCarousel>
     </Section>
+  );
+}
+
+function HomeCarousel({ label, children }: { label: string; children: ReactNode }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const scrollCarousel = (direction: -1 | 1) => {
+    const track = trackRef.current;
+
+    if (!track) {
+      return;
+    }
+
+    track.scrollBy({
+      left: direction * Math.max(track.clientWidth * 0.82, 280),
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <div className="home-carousel" aria-label={label}>
+      <div className="home-carousel-track" ref={trackRef}>
+        {children}
+      </div>
+      <button className="home-carousel-button home-carousel-button-prev" type="button" aria-label={`Previous ${label.toLowerCase()}`} onClick={() => scrollCarousel(-1)}>
+        <CarouselChevron direction="left" />
+      </button>
+      <button className="home-carousel-button home-carousel-button-next" type="button" aria-label={`Next ${label.toLowerCase()}`} onClick={() => scrollCarousel(1)}>
+        <CarouselChevron direction="right" />
+      </button>
+    </div>
+  );
+}
+
+function CarouselChevron({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d={direction === "left" ? "M10 3.5 5.5 8l4.5 4.5" : "M6 3.5 10.5 8 6 12.5"}
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -118,5 +173,5 @@ function getFeaturedItems<T>(items: T[], selectedKeys: string[], getKey: (item: 
 function getFeaturedStrings(items: string[], selectedItems: string[], fallbackCount: number) {
   const uniqueItems = Array.from(new Set(items));
   const selected = selectedItems.filter((item) => uniqueItems.includes(item));
-  return selected.length ? selected : uniqueItems.slice(0, fallbackCount);
+  return (selected.length ? selected : uniqueItems).slice(0, fallbackCount);
 }

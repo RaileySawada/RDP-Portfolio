@@ -194,31 +194,31 @@ function ViewerCount({
 
 function ViewerAvatar({ variant }: { variant: number }) {
   const hairPaths = [
-    "M5.7 11.9c.4-4.3 3.2-6.5 6.6-6.5 3.7 0 6 2.8 6.1 6.4-1.4-.8-2.9-2.1-3.8-3.5-2.1 2.1-5.2 3.2-8.9 3.6Z",
-    "M5.8 12c.4-4.2 3.1-6.5 6.2-6.5 3.5 0 5.9 2.4 6.4 6-2.4-.8-4.3-.5-6.4.2-2.1.7-4.1.9-6.2.3Z",
-    "M5.9 11.8c.6-4 3-6.2 6.2-6.2 3.4 0 5.7 2.4 6 6.4-1.6-1.6-3.6-2.4-5.8-2.4-2.5 0-4.6.7-6.4 2.2Z",
+    "M4.3 11.9C4.8 6.8 8 4.2 12 4.2c4.4 0 7.2 3.1 7.4 7.6-1.6-.8-3.4-2.3-4.5-4-2.4 2.5-6 3.7-10.6 4.1Z",
+    "M4.4 12c.6-5 3.8-7.8 7.6-7.8 4.2 0 7 2.9 7.5 7.3-2.9-.9-5.1-.6-7.6.2-2.5.9-4.9 1-7.5.3Z",
+    "M4.5 11.8c.7-4.8 3.6-7.4 7.5-7.4 4.1 0 6.8 2.9 7.2 7.6-1.9-1.9-4.3-2.8-7-2.8-3 0-5.6.8-7.7 2.6Z",
   ];
   const nosePaths = [
-    "M12.2 13.3l-.5 1.8 1 .1",
-    "M11.8 13.2l.5 1.9-.9.1",
-    "M12 13.2v2",
+    "M12.2 13.2l-.5 2 1.1.1",
+    "M11.8 13.2l.5 2.1-1 .1",
+    "M12 13.1v2.2",
   ];
   const mouthPaths = [
-    "M9.8 16.6c1.3.9 3.1.9 4.4 0",
-    "M10 16.7c1 .6 3 .6 4 0",
-    "M10.1 16.5c1.2.8 2.6.8 3.8 0",
+    "M9.4 16.8c1.5 1.1 3.7 1.1 5.2 0",
+    "M9.8 16.9c1.2.7 3.2.7 4.4 0",
+    "M9.7 16.7c1.4 1 3.2 1 4.6 0",
   ];
 
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path className="viewer-avatar-shirt" d="M7.2 21c.9-2.6 2.5-3.9 4.8-3.9s3.9 1.3 4.8 3.9" />
-      <path className="viewer-avatar-neck" d="M10.2 18.1h3.6v2.1h-3.6z" />
-      <path className="viewer-avatar-ear" d="M5.5 12.5c-.8.1-1.1 1.7-.1 2.2M18.5 12.5c.8.1 1.1 1.7.1 2.2" />
-      <circle className="viewer-avatar-face" cx="12" cy="12.6" r="6.6" />
+      <path className="viewer-avatar-shirt" d="M6 22c1-3.1 3-4.6 6-4.6s5 1.5 6 4.6" />
+      <path className="viewer-avatar-neck" d="M9.8 17.7h4.4v2.7H9.8z" />
+      <path className="viewer-avatar-ear" d="M4.7 12.5c-1 .2-1.4 2.1-.2 2.7M19.3 12.5c1 .2 1.4 2.1.2 2.7" />
+      <circle className="viewer-avatar-face" cx="12" cy="12.3" r="7.7" />
       <path className="viewer-avatar-hair" d={hairPaths[variant]} />
-      <path className="viewer-avatar-brow" d="M8.5 11.7h1.8M13.7 11.7h1.8" />
-      <circle className="viewer-avatar-eye" cx="9.4" cy="13" r="0.72" />
-      <circle className="viewer-avatar-eye" cx="14.6" cy="13" r="0.72" />
+      <path className="viewer-avatar-brow" d="M8.3 11.5h2M13.7 11.5h2" />
+      <circle className="viewer-avatar-eye" cx="9.4" cy="12.9" r="0.8" />
+      <circle className="viewer-avatar-eye" cx="14.6" cy="12.9" r="0.8" />
       <path className="viewer-avatar-nose" d={nosePaths[variant]} />
       <path className="viewer-avatar-mouth" d={mouthPaths[variant]} />
     </svg>
