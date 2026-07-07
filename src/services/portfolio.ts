@@ -1,46 +1,5 @@
 import { fallbackPortfolio, type PortfolioData } from "../data/portfolio";
 
-const stackCategoryOrder = [
-  "Languages",
-  "Frontend Frameworks",
-  "Markup & Styling",
-  "Backend & APIs",
-  "Databases",
-  "Cloud & Storage",
-  "Developer Tools",
-  "Data & Decision Systems",
-  "Other Tools",
-];
-
-const stackCategoryByItem: Record<string, string> = {
-  javascript: "Languages",
-  typescript: "Languages",
-  php: "Languages",
-  bash: "Languages",
-  "c++": "Languages",
-  java: "Languages",
-  react: "Frontend Frameworks",
-  "next.js": "Frontend Frameworks",
-  vue: "Frontend Frameworks",
-  html: "Markup & Styling",
-  css: "Markup & Styling",
-  "tailwind css": "Markup & Styling",
-  "node.js": "Backend & APIs",
-  "rest apis": "Backend & APIs",
-  xml: "Backend & APIs",
-  mysql: "Databases",
-  postgresql: "Databases",
-  firestore: "Databases",
-  firebase: "Cloud & Storage",
-  cloudinary: "Cloud & Storage",
-  netlify: "Cloud & Storage",
-  git: "Developer Tools",
-  dss: "Data & Decision Systems",
-  "data analytics": "Data & Decision Systems",
-  analytics: "Data & Decision Systems",
-  "ai support": "Data & Decision Systems",
-};
-
 function hasPortfolioShape(value: unknown): value is PortfolioData {
   if (!value || typeof value !== "object") {
     return false;
@@ -51,16 +10,13 @@ function hasPortfolioShape(value: unknown): value is PortfolioData {
 }
 
 export function normalizePortfolioData(data: PortfolioData): PortfolioData {
-  const legacySoftSkills = data.stackGroups.find((group) => group.category.toLowerCase().includes("skill"));
-  const skillGroups = data.skillGroups?.length
-    ? data.skillGroups
-    : legacySoftSkills
-      ? [legacySoftSkills]
-      : fallbackPortfolio.skillGroups;
-  const stackGroups = data.skillGroups?.length
+  const hasSavedSkillGroups = Array.isArray(data.skillGroups);
+  const legacySoftSkills = hasSavedSkillGroups ? undefined : data.stackGroups.find((group) => group.category.toLowerCase().includes("skill"));
+  const skillGroups = hasSavedSkillGroups ? data.skillGroups : legacySoftSkills ? [legacySoftSkills] : fallbackPortfolio.skillGroups;
+  const stackGroups = hasSavedSkillGroups
     ? data.stackGroups
     : data.stackGroups.filter((group) => !group.category.toLowerCase().includes("skill"));
-  const normalizedStackGroups = normalizeStackGroups(stackGroups.length ? stackGroups : fallbackPortfolio.stackGroups);
+  const normalizedStackGroups = normalizeStackGroups(stackGroups);
 
   return {
     ...fallbackPortfolio,
@@ -68,48 +24,42 @@ export function normalizePortfolioData(data: PortfolioData): PortfolioData {
     profile: {
       ...fallbackPortfolio.profile,
       ...data.profile,
-      socials: data.profile.socials?.length ? data.profile.socials : fallbackPortfolio.profile.socials,
+      socials: Array.isArray(data.profile.socials) ? data.profile.socials : fallbackPortfolio.profile.socials,
     },
     home: {
-      projectTitles: data.home?.projectTitles || fallbackPortfolio.home?.projectTitles || [],
-      certificationNames: data.home?.certificationNames || fallbackPortfolio.home?.certificationNames || [],
-      stackItems: data.home?.stackItems || fallbackPortfolio.home?.stackItems || [],
+      projectTitles: data.home?.projectTitles ?? fallbackPortfolio.home?.projectTitles ?? [],
+      certificationNames: data.home?.certificationNames ?? fallbackPortfolio.home?.certificationNames ?? [],
+      stackItems: data.home?.stackItems ?? fallbackPortfolio.home?.stackItems ?? [],
     },
-    projects: data.projects?.length ? data.projects : fallbackPortfolio.projects,
+    projects: data.projects,
     stackGroups: normalizedStackGroups,
     skillGroups,
-    certifications: data.certifications?.length ? data.certifications : fallbackPortfolio.certifications,
-    timeline: data.timeline?.length ? data.timeline : fallbackPortfolio.timeline,
+    certifications: data.certifications,
+    timeline: data.timeline,
   };
 }
 
 function normalizeStackGroups(groups: PortfolioData["stackGroups"]): PortfolioData["stackGroups"] {
-  const groupedItems = new Map<string, string[]>();
-  const seenItems = new Set<string>();
+  return groups
+    .map((group) => {
+      const seenItems = new Set<string>();
+      const items = group.items.reduce<string[]>((cleanItems, item) => {
+        const trimmedItem = item.trim();
+        const itemKey = trimmedItem.toLowerCase();
 
-  stackCategoryOrder.forEach((category) => groupedItems.set(category, []));
+        if (!trimmedItem || seenItems.has(itemKey)) {
+          return cleanItems;
+        }
 
-  groups.forEach((group) => {
-    group.items.forEach((item) => {
-      const trimmedItem = item.trim();
-      const itemKey = trimmedItem.toLowerCase();
+        seenItems.add(itemKey);
+        return [...cleanItems, trimmedItem];
+      }, []);
 
-      if (!trimmedItem || seenItems.has(itemKey)) {
-        return;
-      }
-
-      seenItems.add(itemKey);
-      const category = stackCategoryByItem[itemKey] || group.category || "Other Tools";
-      const normalizedCategory = stackCategoryOrder.includes(category) ? category : "Other Tools";
-      groupedItems.set(normalizedCategory, [...(groupedItems.get(normalizedCategory) || []), trimmedItem]);
-    });
-  });
-
-  return stackCategoryOrder
-    .map((category) => ({
-      category,
-      items: groupedItems.get(category) || [],
-    }))
+      return {
+        category: group.category.trim(),
+        items,
+      };
+    })
     .filter((group) => group.items.length > 0);
 }
 
@@ -121,7 +71,7 @@ export async function getPortfolioData(): Promise<PortfolioData> {
   }
 
   try {
-    const response = await fetch(`${databaseUrl.replace(/\/$/, "")}/portfolio.json`);
+    const response = await fetch(`${databaseUrl.replace(/\/$/, "")}/portfolio.json`, { cache: "no-store" });
 
     if (!response.ok) {
       return fallbackPortfolio;
@@ -143,13 +93,19 @@ export function subscribePortfolioData(onChange: (portfolio: PortfolioData) => v
   }
 
   const source = new EventSource(`${databaseUrl}/portfolio.json`);
+  const refreshPortfolio = () => {
+    void getPortfolioData().then(onChange);
+  };
   const handlePortfolioEvent = (event: MessageEvent<string>) => {
     try {
-      const payload = JSON.parse(event.data) as { data?: unknown };
+      const payload = JSON.parse(event.data) as { data?: unknown; path?: string };
 
-      if (hasPortfolioShape(payload.data)) {
+      if (payload.path === "/" && hasPortfolioShape(payload.data)) {
         onChange(normalizePortfolioData(payload.data));
+        return;
       }
+
+      refreshPortfolio();
     } catch {
       // Keep the current portfolio if Firebase sends a malformed stream event.
     }
@@ -158,7 +114,7 @@ export function subscribePortfolioData(onChange: (portfolio: PortfolioData) => v
   source.addEventListener("put", handlePortfolioEvent);
   source.addEventListener("patch", handlePortfolioEvent);
   source.onerror = () => {
-    void getPortfolioData().then(onChange);
+    refreshPortfolio();
   };
 
   return () => source.close();

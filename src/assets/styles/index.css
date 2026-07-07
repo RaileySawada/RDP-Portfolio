@@ -216,10 +216,10 @@ body {
 
 .theme-toggle {
   position: relative;
-  width: 94px;
-  height: 34px;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, 28px);
   align-items: center;
+  gap: 2px;
+  padding: 3px;
   border: 1px solid rgb(229 229 229);
   background: rgb(255 255 255 / 80%);
   color: rgb(115 115 115);
@@ -235,8 +235,8 @@ body {
 .toggle-option {
   z-index: 1;
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   place-items: center;
   justify-self: center;
   border-radius: 999px;
@@ -261,10 +261,10 @@ body {
 
 .toggle-knob {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 26px;
-  height: 26px;
+  top: 3px;
+  left: 3px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
   background: rgb(245 245 245 / 95%);
   box-shadow:
@@ -557,6 +557,8 @@ body {
 
 .toggle-option svg {
   display: block;
+  width: 14px;
+  height: 14px;
 }
 
 .dark .admin-dashboard {

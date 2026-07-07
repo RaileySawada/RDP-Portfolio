@@ -70,7 +70,13 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
   const [message, setMessage] = useState("");
   const hasLoadedPortfolio = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveRequestId = useRef(0);
+  const latestPortfolio = useRef(portfolio);
   const activeSection: ContentSection = isContentSection(section) ? section : "home";
+
+  useEffect(() => {
+    latestPortfolio.current = portfolio;
+  }, [portfolio]);
 
   useEffect(() => {
     let isMounted = true;
@@ -110,22 +116,43 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
 
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
+      saveTimer.current = null;
     }
 
+    const requestId = saveRequestId.current + 1;
+    saveRequestId.current = requestId;
     setSaveStatus("saving");
     saveTimer.current = setTimeout(() => {
-      savePortfolioData(session, prepareForSave(portfolio)).then((result) => {
+      savePortfolioData(session, prepareForSave(latestPortfolio.current)).then((result) => {
+        if (saveRequestId.current !== requestId) {
+          return;
+        }
+
         setSaveStatus(result.ok ? "saved" : "error");
         setMessage(result.ok ? "" : result.error);
       });
-    }, 700);
+    }, 500);
 
     return () => {
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
+        saveTimer.current = null;
       }
     };
   }, [isLoading, portfolio, session]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
+
+      if (hasLoadedPortfolio.current) {
+        void savePortfolioData(session, prepareForSave(latestPortfolio.current));
+      }
+    };
+  }, [session]);
 
   const stackItems = useMemo(() => Array.from(new Set(portfolio.stackGroups.flatMap((group) => group.items).filter(Boolean))), [portfolio.stackGroups]);
 

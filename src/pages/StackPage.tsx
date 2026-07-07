@@ -12,11 +12,12 @@ export function StackPage({ portfolio }: StackPageProps) {
   const stats = useMemo(() => {
     const groups = portfolio.stackGroups.filter((group) => group.items.filter(Boolean).length > 0);
     const uniqueItems = new Set(groups.flatMap((group) => group.items.filter(Boolean)));
+    const featuredItems = (portfolio.home?.stackItems || []).filter((item) => uniqueItems.has(item));
 
     return {
       categories: groups.length,
       tools: uniqueItems.size,
-      core: (portfolio.home?.stackItems || []).length,
+      core: featuredItems.length,
     };
   }, [portfolio.stackGroups, portfolio.home?.stackItems]);
 

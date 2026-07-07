@@ -7,6 +7,10 @@ type SavePortfolioResult =
       ok: false;
       error: string;
     };
+type SavePortfolioResponse = Partial<{
+  ok: boolean;
+  error: string;
+}>;
 
 function getDatabaseUrl() {
   return import.meta.env.VITE_FIREBASE_DATABASE_URL?.replace(/\/$/, "") || "";
@@ -19,13 +23,16 @@ export async function savePortfolioData(session: AdminSession, portfolio: Portfo
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ session, portfolio }),
     });
-    const data = (await response.json()) as SavePortfolioResult;
+    const data = (await response.json()) as SavePortfolioResponse;
 
-    if (!response.ok && data && !data.ok) {
-      return data;
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: typeof data.error === "string" ? data.error : "Could not save portfolio data.",
+      };
     }
 
-    return data;
+    return data.ok ? { ok: true } : { ok: false, error: "Could not save portfolio data." };
   } catch {
     if (import.meta.env.DEV) {
       return savePortfolioDataInDevelopment(portfolio);
