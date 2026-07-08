@@ -31,7 +31,7 @@ export default function App() {
 
 function PortfolioApp() {
   const location = useLocation();
-  const { theme, themePreference, setThemePreference } = useTheme();
+  const { themePreference, setThemePreference } = useTheme();
   const visitorStats = useVisitorStats();
   const portfolio = usePortfolioData();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -73,10 +73,7 @@ function PortfolioApp() {
           <Route
             path="/"
             element={
-              <HomePage
-                portfolio={portfolio}
-                isDark={theme === "dark"}
-              />
+              <HomePage portfolio={portfolio} />
             }
           />
           <Route path="/projects" element={<ProjectsPage portfolio={portfolio} />} />

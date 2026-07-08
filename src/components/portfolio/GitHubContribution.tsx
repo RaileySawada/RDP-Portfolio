@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GitHubCalendar, type Activity } from "react-github-calendar";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import type { Activity } from "react-github-calendar";
 import type { PortfolioData } from "../../data/portfolio";
 import { ArrowIcon } from "../ui/Icons";
 import { Section } from "../ui/Section";
@@ -8,7 +8,6 @@ import { Reveal } from "./Reveal";
 
 type GitHubContributionProps = {
   portfolio: PortfolioData;
-  isDark: boolean;
 };
 
 type ContributionStats = {
@@ -19,13 +18,52 @@ type ContributionStats = {
 
 type ContributionWeek = (Activity | null)[];
 
-function computeStats(days: Activity[]): ContributionStats {
-  let total = 0;
+type GitHubContributionApiResponse = {
+  total?: {
+    lastYear?: number;
+  };
+  contributions?: Activity[];
+};
+
+const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const weekdayLabels = [
+  { label: "Mon", row: 2 },
+  { label: "Wed", row: 4 },
+  { label: "Fri", row: 6 },
+];
+const legendLevels = [0, 1, 2, 3, 4];
+
+async function fetchContributionData(githubUser: string, signal: AbortSignal) {
+  const localResponse = await fetch(`/.netlify/functions/github-contributions?user=${encodeURIComponent(githubUser)}`, {
+    signal,
+  });
+  const localContentType = localResponse.headers.get("content-type") || "";
+
+  if (localResponse.ok && localContentType.includes("application/json")) {
+    return (await localResponse.json()) as GitHubContributionApiResponse;
+  }
+
+  const fallbackResponse = await fetch(`https://github-contributions-api.jogruber.de/v4/${githubUser}?y=last`, {
+    signal,
+  });
+
+  if (!fallbackResponse.ok) {
+    throw new Error("GitHub contributions are unavailable.");
+  }
+
+  return (await fallbackResponse.json()) as GitHubContributionApiResponse;
+}
+
+function computeStats(days: Activity[], totalOverride?: number): ContributionStats {
+  let total = totalOverride ?? 0;
   let longestStreak = 0;
   let runningStreak = 0;
 
   for (const day of days) {
-    total += day.count;
+    if (totalOverride === undefined) {
+      total += day.count;
+    }
+
     runningStreak = day.count > 0 ? runningStreak + 1 : 0;
     longestStreak = Math.max(longestStreak, runningStreak);
   }
@@ -41,27 +79,11 @@ function computeStats(days: Activity[]): ContributionStats {
   return { total, currentStreak, longestStreak };
 }
 
-export function GitHubContribution({ portfolio, isDark }: GitHubContributionProps) {
+export function GitHubContribution({ portfolio }: GitHubContributionProps) {
   const { profile } = portfolio;
   const [activities, setActivities] = useState<Activity[]>([]);
   const [stats, setStats] = useState<ContributionStats | null>(null);
   const calendarWrapRef = useRef<HTMLDivElement>(null);
-  const statsKeyRef = useRef("");
-
-  const handleTransformData = useCallback((data: Activity[]) => {
-    const nextStats = computeStats(data);
-    const nextStatsKey = `${nextStats.total}:${nextStats.currentStreak}:${nextStats.longestStreak}`;
-
-    if (statsKeyRef.current !== nextStatsKey) {
-      statsKeyRef.current = nextStatsKey;
-      window.setTimeout(() => {
-        setActivities(data);
-        setStats(nextStats);
-      }, 0);
-    }
-
-    return data;
-  }, []);
 
   const weeks = useMemo(() => buildContributionWeeks(activities), [activities]);
 
@@ -76,6 +98,32 @@ export function GitHubContribution({ portfolio, isDark }: GitHubContributionProp
       calendarWrap.scrollLeft = calendarWrap.scrollWidth;
     });
   }, [weeks.length]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadGitHubContributions() {
+      try {
+        const data = await fetchContributionData(profile.githubUser, controller.signal);
+
+        if (!Array.isArray(data.contributions)) {
+          return;
+        }
+
+        const totalLastYear = typeof data.total?.lastYear === "number" ? data.total.lastYear : undefined;
+        setActivities(data.contributions);
+        setStats(computeStats(data.contributions, totalLastYear));
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.warn("Unable to load GitHub contribution stats.", error);
+        }
+      }
+    }
+
+    loadGitHubContributions();
+
+    return () => controller.abort();
+  }, [profile.githubUser]);
 
   return (
     <Section
@@ -111,30 +159,6 @@ export function GitHubContribution({ portfolio, isDark }: GitHubContributionProp
         <div className="github-panel-body">
           <div className="github-calendar-wrap" ref={calendarWrapRef}>
             <ContributionDotGrid weeks={weeks} />
-            <div className="github-calendar-loader" aria-hidden="true">
-              <GitHubCalendar
-                username={profile.githubUser}
-                year="last"
-                blockSize={4}
-                blockMargin={2}
-                blockRadius={4}
-                colorScheme={isDark ? "dark" : "light"}
-                fontSize={12}
-                showColorLegend={false}
-                showMonthLabels={false}
-                transformData={handleTransformData}
-                labels={{
-                  totalCount: "{{count}} contributions in the last year",
-                  weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-                  months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-                  legend: { less: "", more: "" },
-                }}
-                theme={{
-                  light: ["#f5f5f5", "#d4d4d4", "#a3a3a3", "#525252", "#0a0a0a"],
-                  dark: ["#090909", "#525252", "#a3a3a3", "#e5e5e5", "#ffffff"],
-                }}
-              />
-            </div>
           </div>
         </div>
       </Reveal>
@@ -176,20 +200,71 @@ function ContributionDotGrid({ weeks }: { weeks: ContributionWeek[] }) {
     return <div className="github-dot-grid is-loading" aria-hidden="true" />;
   }
 
+  const months = buildMonthLabels(weeks);
+  const weekCount = weeks.length;
+
   return (
-    <div className="github-dot-grid" aria-label="GitHub contributions in the last year">
-      {weeks.map((week, weekIndex) => (
-        <div className="github-dot-week" key={`week-${weekIndex}`}>
-          {week.map((day, dayIndex) => (
-            <span
-              className="github-dot"
-              data-level={day?.level ?? 0}
-              title={day ? `${day.count} contributions on ${day.date}` : undefined}
-              key={day?.date ?? `empty-${weekIndex}-${dayIndex}`}
-            />
-          ))}
-        </div>
-      ))}
+    <div className="github-calendar-content" style={{ "--github-week-count": weekCount } as CSSProperties}>
+      <div className="github-month-labels" aria-hidden="true">
+        {months.map((month) => (
+          <span style={{ gridColumn: `${month.weekIndex + 1} / span 4` }} key={`${month.label}-${month.weekIndex}`}>
+            {month.label}
+          </span>
+        ))}
+      </div>
+
+      <div className="github-weekday-labels" aria-hidden="true">
+        {weekdayLabels.map((day) => (
+          <span style={{ gridRow: day.row }} key={day.label}>
+            {day.label}
+          </span>
+        ))}
+      </div>
+
+      <div className="github-dot-grid" aria-label="GitHub contributions in the last year">
+        {weeks.map((week, weekIndex) => (
+          <div className="github-dot-week" key={`week-${weekIndex}`}>
+            {week.map((day, dayIndex) => (
+              <span
+                className="github-dot"
+                data-level={day?.level ?? 0}
+                title={day ? `${day.count} contributions on ${day.date}` : undefined}
+                key={day?.date ?? `empty-${weekIndex}-${dayIndex}`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div className="github-calendar-legend" aria-hidden="true">
+        <span>Less</span>
+        {legendLevels.map((level) => (
+          <span className="github-legend-dot" data-level={level} key={level} />
+        ))}
+        <span>More</span>
+      </div>
     </div>
   );
+}
+
+function buildMonthLabels(weeks: ContributionWeek[]) {
+  const labels: Array<{ label: string; weekIndex: number }> = [];
+  let previousMonth = -1;
+
+  weeks.forEach((week, weekIndex) => {
+    const firstDay = week.find((day): day is Activity => Boolean(day));
+
+    if (!firstDay) {
+      return;
+    }
+
+    const month = new Date(`${firstDay.date}T00:00:00`).getMonth();
+
+    if (month !== previousMonth) {
+      labels.push({ label: monthLabels[month] || "", weekIndex });
+      previousMonth = month;
+    }
+  });
+
+  return labels;
 }

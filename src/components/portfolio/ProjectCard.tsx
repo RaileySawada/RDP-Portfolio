@@ -11,6 +11,7 @@ import { useInView } from "../../hooks/useInView";
 type ProjectCardProps = {
   project: Project;
   index?: number;
+  hideDescriptionOnMobile?: boolean;
 };
 
 const projectIcons: Record<ProjectIconKey, typeof SystemIcon> = {
@@ -20,14 +21,14 @@ const projectIcons: Record<ProjectIconKey, typeof SystemIcon> = {
   web: WebIcon,
 };
 
-export function ProjectCard({ project, index = 0 }: ProjectCardProps) {
+export function ProjectCard({ project, index = 0, hideDescriptionOnMobile = false }: ProjectCardProps) {
   const { ref, isInView } = useInView<HTMLElement>();
   const ThumbIcon = projectIcons[project.icon ?? "web"];
   const serial = String(index + 1).padStart(2, "0");
 
   return (
     <article
-      className={`card group home-reveal flex h-full flex-col ${isInView ? "is-visible" : ""}`}
+      className={`card project-card group home-reveal flex h-full flex-col ${isInView ? "is-visible" : ""}`}
       style={{ transitionDelay: `${index * 80}ms` }}
       ref={ref}
     >
@@ -43,7 +44,7 @@ export function ProjectCard({ project, index = 0 }: ProjectCardProps) {
       <h3 className="mt-5 text-xl font-semibold text-neutral-950 dark:text-white">
         {project.title}
       </h3>
-      <p className="mt-3 min-h-24 text-sm leading-7 text-neutral-600 dark:text-neutral-400">
+      <p className={`project-description mt-3 min-h-24 text-sm leading-7 text-neutral-600 dark:text-neutral-400 ${hideDescriptionOnMobile ? "project-description-home" : ""}`}>
         {project.description}
       </p>
       <div className="mt-5 flex flex-wrap gap-2">

@@ -11,20 +11,19 @@ import { Section } from "../components/ui/Section";
 
 type HomePageProps = {
   portfolio: PortfolioData;
-  isDark: boolean;
 };
 
-export function HomePage({ portfolio, isDark }: HomePageProps) {
+export function HomePage({ portfolio }: HomePageProps) {
   return (
-    <>
+    <div className="home-page">
       <Hero portfolio={portfolio} />
       <OverviewProjects portfolio={portfolio} />
       <OverviewStack portfolio={portfolio} />
       <OverviewCertifications portfolio={portfolio} />
       <Reveal>
-        <GitHubContribution portfolio={portfolio} isDark={isDark} />
+        <GitHubContribution portfolio={portfolio} />
       </Reveal>
-    </>
+    </div>
   );
 }
 
@@ -46,7 +45,7 @@ function OverviewProjects({ portfolio }: { portfolio: PortfolioData }) {
       <HomeCarousel label="Featured projects">
         {featuredProjects.map((project, index) => (
           <div className="home-carousel-item home-carousel-item-project" key={project.title}>
-            <ProjectCard project={project} index={index} />
+            <ProjectCard project={project} index={index} hideDescriptionOnMobile />
           </div>
         ))}
       </HomeCarousel>

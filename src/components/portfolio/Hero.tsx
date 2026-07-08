@@ -12,7 +12,7 @@ export function Hero({ portfolio }: HeroProps) {
   const stackCount = stackGroups.reduce((total, group) => total + group.items.length, 0);
 
   return (
-    <section className="section-shell hero-section flex min-h-screen items-center pt-20 lg:pt-16">
+    <section className="section-shell hero-section flex items-center pt-24 pb-16 lg:pt-20">
       <div className="hero-grid grid w-full gap-10 xl:grid-cols-[0.82fr_1.18fr] xl:items-center">
         <div className="profile-portrait mx-auto w-full max-w-80">
           {profile.imageUrl ? (
