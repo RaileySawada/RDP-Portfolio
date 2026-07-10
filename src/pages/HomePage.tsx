@@ -134,8 +134,10 @@ function HomeCarousel({ label, children }: { label: string; children: ReactNode 
 
   return (
     <div className="home-carousel" aria-label={label}>
-      <div className="home-carousel-track" ref={trackRef}>
-        {children}
+      <div className="home-carousel-viewport">
+        <div className="home-carousel-track" ref={trackRef}>
+          {children}
+        </div>
       </div>
       <button className="home-carousel-button home-carousel-button-prev" type="button" aria-label={`Previous ${label.toLowerCase()}`} onClick={() => scrollCarousel(-1)}>
         <CarouselChevron direction="left" />

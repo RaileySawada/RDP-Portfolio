@@ -2619,6 +2619,11 @@ body {
   overflow: visible;
 }
 
+.home-carousel-viewport {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .home-carousel-button {
   position: absolute;
   top: 50%;
@@ -3806,13 +3811,19 @@ body {
     grid-auto-flow: column;
     grid-template-columns: none;
     gap: 14px;
-    background: transparent;
+    background: none;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 2px 48px 10px;
+    padding: 18px 48px 28px;
     scroll-padding-inline: 48px;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
+  }
+
+  .home-carousel-viewport {
+    margin-block: -18px -28px;
+    mask-image: linear-gradient(90deg, transparent 0, black 38px, black calc(100% - 38px), transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, black 38px, black calc(100% - 38px), transparent 100%);
   }
 
   .home-carousel-item {
