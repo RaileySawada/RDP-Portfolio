@@ -6,7 +6,7 @@ const textMaxLength = 2000;
 const urlMaxLength = 500;
 
 export function getDatabaseUrl() {
-  return (process.env.FIREBASE_DATABASE_URL || "").replace(/\/$/, "");
+  return (process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "").replace(/\/$/, "");
 }
 
 export function jsonResponse(statusCode, body, headers = {}) {

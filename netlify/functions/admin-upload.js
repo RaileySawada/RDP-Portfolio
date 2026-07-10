@@ -3,9 +3,9 @@ import { enforceRateLimit, firebaseRequest, hashValue, jsonResponse } from "./_s
 
 function getCloudinaryConfig() {
   return {
-    cloudName: process.env.CLOUDINARY_NAME || "",
-    apiKey: process.env.CLOUDINARY_API_KEY || "",
-    apiSecret: process.env.CLOUDINARY_API_SECRET || "",
+    cloudName: process.env.CLOUDINARY_NAME || process.env.VITE_CLOUDINARY_NAME || "",
+    apiKey: process.env.CLOUDINARY_API_KEY || process.env.VITE_CLOUDINARY_API || "",
+    apiSecret: process.env.CLOUDINARY_API_SECRET || process.env.VITE_CLOUDINARY_SECRET || "",
   };
 }
 
