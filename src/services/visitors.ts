@@ -32,7 +32,6 @@ const fallbackStats: VisitorStats = {
 };
 
 const sessionKey = "portfolio-visitor-session";
-const activeWindowMs = 90000;
 
 function getSessionId() {
   const existingSession = window.sessionStorage.getItem(sessionKey);
@@ -44,10 +43,6 @@ function getSessionId() {
   const nextSession = crypto.randomUUID();
   window.sessionStorage.setItem(sessionKey, nextSession);
   return nextSession;
-}
-
-function getDatabaseUrl() {
-  return import.meta.env.VITE_FIREBASE_DATABASE_URL?.replace(/\/$/, "") || "";
 }
 
 function getBrowserName(userAgent: string) {
@@ -84,63 +79,6 @@ function getClientInfo(): VisitorClientInfo {
   };
 }
 
-function getActiveSessionCount(sessions: Record<string, { lastSeen?: number }> | undefined, now: number) {
-  if (!sessions) {
-    return 1;
-  }
-
-  const activeViewers = Object.values(sessions).filter((session) => {
-    return typeof session.lastSeen === "number" && now - session.lastSeen <= activeWindowMs;
-  }).length;
-
-  return Math.max(activeViewers, 1);
-}
-
-function getTotalSessionCount(sessions: Record<string, { lastSeen?: number }> | undefined) {
-  return sessions ? Object.keys(sessions).length : 1;
-}
-
-async function recordFirebaseVisit(): Promise<VisitorStats> {
-  const databaseUrl = getDatabaseUrl();
-
-  if (!databaseUrl) {
-    return fallbackStats;
-  }
-
-  const now = Date.now();
-  const sessionId = getSessionId();
-  const response = await fetch(`${databaseUrl}/visitorStats.json`);
-  const store = response.ok ? await response.json() : {};
-  const sessions = (store?.sessions || {}) as Record<string, { firstSeen?: number; lastSeen?: number; client?: VisitorClientInfo }>;
-  const previousSession = sessions[sessionId];
-
-  sessions[sessionId] = {
-    firstSeen: previousSession?.firstSeen || now,
-    lastSeen: now,
-    client: getClientInfo(),
-  };
-
-  const visitors = Math.max(Number(store?.total || 0), getTotalSessionCount(sessions));
-
-  await fetch(`${databaseUrl}/visitorStats.json`, {
-    method: "PUT",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      total: visitors,
-      updatedAt: now,
-      sessions,
-    }),
-  });
-
-  const activeViewers = getActiveSessionCount(sessions, now);
-
-  return {
-    visitors,
-    activeViewers,
-    plusCount: Math.max(activeViewers - 3, 0),
-  };
-}
-
 export async function recordVisit(kind: "visit" | "heartbeat" = "visit"): Promise<VisitorStats> {
   try {
     const response = await fetch("/.netlify/functions/visitors", {
@@ -154,16 +92,12 @@ export async function recordVisit(kind: "visit" | "heartbeat" = "visit"): Promis
     });
 
     if (!response.ok) {
-      return recordFirebaseVisit();
+      return fallbackStats;
     }
 
     return (await response.json()) as VisitorStats;
   } catch {
-    try {
-      return await recordFirebaseVisit();
-    } catch {
-      return fallbackStats;
-    }
+    return fallbackStats;
   }
 }
 

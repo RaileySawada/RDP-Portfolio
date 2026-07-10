@@ -33,7 +33,7 @@ function PortfolioApp() {
   const location = useLocation();
   const { themePreference, setThemePreference } = useTheme();
   const visitorStats = useVisitorStats();
-  const portfolio = usePortfolioData();
+  const { portfolio, isLoading: isPortfolioLoading } = usePortfolioData();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
   const isAdminRoute =
@@ -44,7 +44,7 @@ function PortfolioApp() {
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 transition-colors duration-200 dark:bg-neutral-950 dark:text-neutral-100">
       <ScrollToTop />
-      {!isAdminRoute ? (
+      {!isAdminRoute && portfolio ? (
         <button
           className="fixed left-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-md border border-neutral-200 bg-white/90 text-neutral-800 shadow-sm backdrop-blur transition hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-neutral-950 dark:border-neutral-800 dark:bg-neutral-950/90 dark:text-neutral-100 dark:hover:bg-neutral-900 dark:focus-visible:outline-white lg:hidden"
           type="button"
@@ -55,7 +55,7 @@ function PortfolioApp() {
         </button>
       ) : null}
 
-      {!isAdminRoute ? (
+      {!isAdminRoute && portfolio ? (
         <Sidebar
           navItems={navItems}
           profile={portfolio.profile}
@@ -73,13 +73,13 @@ function PortfolioApp() {
           <Route
             path="/"
             element={
-              <HomePage portfolio={portfolio} />
+              portfolio ? <HomePage portfolio={portfolio} /> : <PortfolioDataState isLoading={isPortfolioLoading} />
             }
           />
-          <Route path="/projects" element={<ProjectsPage portfolio={portfolio} />} />
-          <Route path="/stack" element={<StackPage portfolio={portfolio} />} />
-          <Route path="/certifications" element={<CertificationsPage portfolio={portfolio} />} />
-          <Route path="/about" element={<AboutPage portfolio={portfolio} />} />
+          <Route path="/projects" element={portfolio ? <ProjectsPage portfolio={portfolio} /> : <PortfolioDataState isLoading={isPortfolioLoading} />} />
+          <Route path="/stack" element={portfolio ? <StackPage portfolio={portfolio} /> : <PortfolioDataState isLoading={isPortfolioLoading} />} />
+          <Route path="/certifications" element={portfolio ? <CertificationsPage portfolio={portfolio} /> : <PortfolioDataState isLoading={isPortfolioLoading} />} />
+          <Route path="/about" element={portfolio ? <AboutPage portfolio={portfolio} /> : <PortfolioDataState isLoading={isPortfolioLoading} />} />
           <Route path="/rdp-login" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
           <Route path="/rdp-admin" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
           <Route path="/rdp-admin/:view" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
@@ -89,5 +89,15 @@ function PortfolioApp() {
         </Routes>
       </main>
     </div>
+  );
+}
+
+function PortfolioDataState({ isLoading }: { isLoading: boolean }) {
+  return (
+    <section className="flex min-h-screen items-center justify-center px-6 text-center" aria-live="polite">
+      <p className="font-mono text-sm font-semibold uppercase text-neutral-500 dark:text-neutral-400">
+        {isLoading ? "Loading..." : "No Data Found"}
+      </p>
+    </section>
   );
 }

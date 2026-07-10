@@ -172,5 +172,5 @@ function getFeaturedItems<T>(items: T[], selectedKeys: string[], getKey: (item: 
 function getFeaturedStrings(items: string[], selectedItems: string[], fallbackCount: number) {
   const uniqueItems = Array.from(new Set(items));
   const selected = selectedItems.filter((item) => uniqueItems.includes(item));
-  return (selected.length ? selected : uniqueItems).slice(0, fallbackCount);
+  return selected.length ? selected : uniqueItems.slice(0, fallbackCount);
 }

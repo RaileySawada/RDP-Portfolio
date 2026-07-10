@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
-import { enforceRateLimit, firebaseRequest, hashValue, jsonResponse } from "./_security.js";
+import { enforceRateLimit, firebaseRequest, hashValue, jsonResponse, parseJsonBody } from "./_security.js";
 
 function getCloudinaryConfig() {
   return {
-    cloudName: process.env.CLOUDINARY_NAME || process.env.VITE_CLOUDINARY_NAME || "",
-    apiKey: process.env.CLOUDINARY_API_KEY || process.env.VITE_CLOUDINARY_API || "",
-    apiSecret: process.env.CLOUDINARY_API_SECRET || process.env.VITE_CLOUDINARY_SECRET || "",
+    cloudName: process.env.CLOUDINARY_NAME || "",
+    apiKey: process.env.CLOUDINARY_API_KEY || "",
+    apiSecret: process.env.CLOUDINARY_API_SECRET || "",
   };
 }
 
@@ -46,7 +46,13 @@ export async function handler(event) {
       return rateLimit.response;
     }
 
-    const payload = event.body ? JSON.parse(event.body) : {};
+    const parsedBody = parseJsonBody(event, 5_700_000);
+
+    if (!parsedBody.ok) {
+      return jsonResponse(400, { error: parsedBody.error });
+    }
+
+    const payload = parsedBody.value;
     const isSessionValid = await validateSession(payload);
 
     if (!isSessionValid) {
@@ -54,11 +60,11 @@ export async function handler(event) {
     }
 
     const file = String(payload.file || "");
-    const folder = String(payload.folder || "portfolio/admin").replace(/[^a-zA-Z0-9_/-]/g, "");
+    const folder = String(payload.folder || "portfolio/admin").replace(/[^a-zA-Z0-9_/-]/g, "").slice(0, 120) || "portfolio/admin";
     const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
 
-    if (!file.startsWith("data:image/") || file.length > 12_000_000) {
-      return jsonResponse(400, { error: "Upload a valid image under 9MB." });
+    if (!/^data:image\/(?:png|jpe?g|webp|gif);base64,/i.test(file) || file.length > 5_650_000) {
+      return jsonResponse(400, { error: "Upload a PNG, JPEG, WebP, or GIF image under 4MB." });
     }
 
     if (!cloudName || !apiKey || !apiSecret) {
@@ -77,7 +83,14 @@ export async function handler(event) {
       method: "POST",
       body: formData,
     });
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      return jsonResponse(502, { error: "Cloudinary returned an invalid response." });
+    }
 
     if (!response.ok) {
       return jsonResponse(response.status, { error: data?.error?.message || "Cloudinary upload failed." });

@@ -1,4 +1,4 @@
-import { fallbackPortfolio, type PortfolioData } from "../data/portfolio";
+import type { PortfolioData } from "../data/portfolio";
 
 function hasPortfolioShape(value: unknown): value is PortfolioData {
   if (!value || typeof value !== "object") {
@@ -12,24 +12,22 @@ function hasPortfolioShape(value: unknown): value is PortfolioData {
 export function normalizePortfolioData(data: PortfolioData): PortfolioData {
   const hasSavedSkillGroups = Array.isArray(data.skillGroups);
   const legacySoftSkills = hasSavedSkillGroups ? undefined : data.stackGroups.find((group) => group.category.toLowerCase().includes("skill"));
-  const skillGroups = hasSavedSkillGroups ? data.skillGroups : legacySoftSkills ? [legacySoftSkills] : fallbackPortfolio.skillGroups;
+  const skillGroups = hasSavedSkillGroups ? data.skillGroups : legacySoftSkills ? [legacySoftSkills] : [];
   const stackGroups = hasSavedSkillGroups
     ? data.stackGroups
     : data.stackGroups.filter((group) => !group.category.toLowerCase().includes("skill"));
   const normalizedStackGroups = normalizeStackGroups(stackGroups);
 
   return {
-    ...fallbackPortfolio,
     ...data,
     profile: {
-      ...fallbackPortfolio.profile,
       ...data.profile,
-      socials: Array.isArray(data.profile.socials) ? data.profile.socials : fallbackPortfolio.profile.socials,
+      socials: Array.isArray(data.profile.socials) ? data.profile.socials : [],
     },
     home: {
-      projectTitles: data.home?.projectTitles ?? fallbackPortfolio.home?.projectTitles ?? [],
-      certificationNames: data.home?.certificationNames ?? fallbackPortfolio.home?.certificationNames ?? [],
-      stackItems: data.home?.stackItems ?? fallbackPortfolio.home?.stackItems ?? [],
+      projectTitles: data.home?.projectTitles ?? [],
+      certificationNames: data.home?.certificationNames ?? [],
+      stackItems: data.home?.stackItems ?? [],
     },
     projects: data.projects,
     stackGroups: normalizedStackGroups,
@@ -63,22 +61,22 @@ function normalizeStackGroups(groups: PortfolioData["stackGroups"]): PortfolioDa
     .filter((group) => group.items.length > 0);
 }
 
-export async function getPortfolioData(): Promise<PortfolioData> {
+export async function getPortfolioData(): Promise<PortfolioData | null> {
   try {
     const response = await fetch("/.netlify/functions/portfolio", { cache: "no-store" });
 
     if (!response.ok) {
-      return fallbackPortfolio;
+      return null;
     }
 
     const data: unknown = await response.json();
-    return hasPortfolioShape(data) ? normalizePortfolioData(data) : fallbackPortfolio;
+    return hasPortfolioShape(data) ? normalizePortfolioData(data) : null;
   } catch {
-    return fallbackPortfolio;
+    return null;
   }
 }
 
-export function subscribePortfolioData(onChange: (portfolio: PortfolioData) => void): () => void {
+export function subscribePortfolioData(onChange: (portfolio: PortfolioData | null) => void): () => void {
   void getPortfolioData().then(onChange);
   return () => undefined;
 }

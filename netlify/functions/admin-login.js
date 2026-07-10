@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { enforceRateLimit, firebaseRequest, getHeader, getIpAddress, hashValue, jsonResponse } from "./_security.js";
+import { enforceRateLimit, firebaseRequest, getHeader, getIpAddress, hashValue, jsonResponse, parseJsonBody, sanitizeText } from "./_security.js";
 
 const rateLimitWindowMs = 15 * 60 * 1000;
 const lockMs = 15 * 60 * 1000;
@@ -9,10 +9,10 @@ const sessionTtlMs = 8 * 60 * 60 * 1000;
 function getRequestInfo(event) {
   return {
     ip: getIpAddress(event),
-    userAgent: getHeader(event.headers, "user-agent"),
-    country: getHeader(event.headers, "x-country"),
-    city: getHeader(event.headers, "x-nf-geo-city"),
-    region: getHeader(event.headers, "x-nf-geo-subdivision"),
+    userAgent: sanitizeText(getHeader(event.headers, "user-agent"), 300),
+    country: sanitizeText(getHeader(event.headers, "x-country"), 80),
+    city: sanitizeText(getHeader(event.headers, "x-nf-geo-city"), 80),
+    region: sanitizeText(getHeader(event.headers, "x-nf-geo-subdivision"), 80),
   };
 }
 
@@ -25,7 +25,13 @@ function normalizeEmail(email) {
 }
 
 function isValidPayload(payload) {
-  return typeof payload?.email === "string" && typeof payload?.password === "string";
+  return (
+    typeof payload?.email === "string" &&
+    payload.email.length <= 254 &&
+    typeof payload?.password === "string" &&
+    payload.password.length > 0 &&
+    payload.password.length <= 1024
+  );
 }
 
 function pbkdf2(password, salt, iterations) {
@@ -45,7 +51,7 @@ async function verifyPassword(password, storedHash) {
   const [algorithm, iterationsValue, salt, hash] = String(storedHash || "").split("$");
   const iterations = Number(iterationsValue);
 
-  if (algorithm !== "pbkdf2_sha256" || !Number.isFinite(iterations) || !salt || !hash) {
+  if (algorithm !== "pbkdf2_sha256" || !Number.isInteger(iterations) || iterations < 10_000 || iterations > 1_000_000 || !salt || !hash) {
     return false;
   }
 
@@ -138,7 +144,13 @@ export async function handler(event) {
       return rateLimit.response;
     }
 
-    const payload = event.body ? JSON.parse(event.body) : {};
+    const parsedBody = parseJsonBody(event, 16_000);
+
+    if (!parsedBody.ok) {
+      return jsonResponse(400, { ok: false, error: parsedBody.error });
+    }
+
+    const payload = parsedBody.value;
 
     if (!isValidPayload(payload)) {
       return jsonResponse(400, { ok: false, error: "Email and password are required." });

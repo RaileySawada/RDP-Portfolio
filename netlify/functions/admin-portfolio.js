@@ -1,4 +1,4 @@
-import { enforceRateLimit, firebaseRequest, hashValue, jsonResponse, sanitizePortfolioData } from "./_security.js";
+import { enforceRateLimit, firebaseRequest, hashValue, jsonResponse, parseJsonBody, sanitizePortfolioData } from "./_security.js";
 
 async function validateSession(payload) {
   const id = String(payload?.session?.id || "").replace(/[^a-zA-Z0-9_-]/g, "");
@@ -45,7 +45,13 @@ export async function handler(event) {
       return rateLimit.response;
     }
 
-    const payload = event.body ? JSON.parse(event.body) : {};
+    const parsedBody = parseJsonBody(event, 2_000_000);
+
+    if (!parsedBody.ok) {
+      return jsonResponse(400, { error: parsedBody.error });
+    }
+
+    const payload = parsedBody.value;
     const isSessionValid = await validateSession(payload);
 
     if (!isSessionValid) {

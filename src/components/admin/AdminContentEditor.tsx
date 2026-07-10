@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { Certification, PortfolioData, Project, SkillGroup, SocialLink, StackGroup } from "../../data/portfolio";
-import { fallbackPortfolio } from "../../data/portfolio";
+import { emptyPortfolio } from "../../data/portfolio";
 import { getPortfolioData, normalizePortfolioData } from "../../services/portfolio";
 import { savePortfolioData } from "../../services/adminPortfolio";
 import type { AdminSession } from "../../services/adminAuth";
@@ -64,11 +64,13 @@ const sectionDetails: Record<Exclude<ContentSection, "projects">, { eyebrow: str
 export function AdminContentEditor({ session }: AdminContentEditorProps) {
   const navigate = useNavigate();
   const { section } = useParams();
-  const [portfolio, setPortfolio] = useState<PortfolioData>(() => normalizePortfolioData(fallbackPortfolio));
+  const [portfolio, setPortfolio] = useState<PortfolioData>(() => normalizePortfolioData(emptyPortfolio));
+  const [hasPortfolioData, setHasPortfolioData] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [message, setMessage] = useState("");
   const hasLoadedPortfolio = useRef(false);
+  const hasPortfolioDataRef = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveRequestId = useRef(0);
   const latestPortfolio = useRef(portfolio);
@@ -83,8 +85,10 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
 
     getPortfolioData()
       .then((data) => {
-        if (isMounted) {
+        if (isMounted && data) {
           setPortfolio(normalizePortfolioData(data));
+          setHasPortfolioData(true);
+          hasPortfolioDataRef.current = true;
         }
       })
       .finally(() => {
@@ -105,7 +109,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
   }, [navigate, section]);
 
   useEffect(() => {
-    if (isLoading) {
+    if (isLoading || !hasPortfolioData) {
       return;
     }
 
@@ -139,7 +143,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
         saveTimer.current = null;
       }
     };
-  }, [isLoading, portfolio, session]);
+  }, [hasPortfolioData, isLoading, portfolio, session]);
 
   useEffect(() => {
     return () => {
@@ -148,7 +152,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
         saveTimer.current = null;
       }
 
-      if (hasLoadedPortfolio.current) {
+      if (hasLoadedPortfolio.current && hasPortfolioDataRef.current) {
         void savePortfolioData(session, prepareForSave(latestPortfolio.current));
       }
     };
@@ -416,6 +420,22 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
       />
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="admin-content-shell mx-auto max-w-6xl">
+        <p className="admin-editor-empty">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!hasPortfolioData) {
+    return (
+      <div className="admin-content-shell mx-auto max-w-6xl">
+        <p className="admin-editor-empty">No Data Found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-content-shell mx-auto max-w-6xl">

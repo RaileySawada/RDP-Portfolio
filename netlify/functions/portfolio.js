@@ -22,9 +22,7 @@ export async function handler(event) {
       return jsonResponse(404, { error: "Portfolio data was not found." });
     }
 
-    return jsonResponse(200, sanitizePortfolioData(portfolio), {
-      "cache-control": "public, max-age=60, stale-while-revalidate=300",
-    });
+    return jsonResponse(200, sanitizePortfolioData(portfolio));
   } catch {
     return jsonResponse(500, { error: "Portfolio service is unavailable." });
   }

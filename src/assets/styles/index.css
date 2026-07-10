@@ -819,6 +819,12 @@ body {
   padding-top: 16px;
 }
 
+.admin-sidebar-foot .theme-toggle {
+  width: max-content;
+  margin-top: 0;
+  justify-self: start;
+}
+
 .dark .admin-sidebar-foot {
   border-color: rgb(38 38 38);
 }

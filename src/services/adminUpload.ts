@@ -16,8 +16,8 @@ export async function uploadAdminImage(session: AdminSession, file: File, folder
     return { ok: false, error: "Select an image file." };
   }
 
-  if (file.size > 9 * 1024 * 1024) {
-    return { ok: false, error: "Image must be under 9MB." };
+  if (file.size > 4 * 1024 * 1024) {
+    return { ok: false, error: "Image must be under 4MB." };
   }
 
   try {

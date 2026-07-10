@@ -1,4 +1,4 @@
-import { enforceRateLimit, firebaseRequest, getHeader, getIpAddress, jsonResponse, sanitizeText } from "./_security.js";
+import { enforceRateLimit, firebaseRequest, firebaseTransaction, getHeader, getIpAddress, jsonResponse, parseJsonBody, sanitizeText } from "./_security.js";
 
 const activeWindowMs = 90000;
 const fallbackStats = {
@@ -24,12 +24,28 @@ function getRequestInfo(event) {
 }
 
 async function getVisitorStore() {
-  try {
-    const store = await firebaseRequest("/visitorStats", { method: "GET" });
-    return store && typeof store === "object" ? store : {};
-  } catch {
-    return {};
-  }
+  const store = await firebaseRequest("/visitorStats", { method: "GET" });
+  return store && typeof store === "object" ? store : {};
+}
+
+function sanitizeClient(client) {
+  const network = client?.network && typeof client.network === "object" ? client.network : {};
+  const downlink = Number(network.downlink);
+  const rtt = Number(network.rtt);
+
+  return {
+    browser: sanitizeText(client?.browser, 80),
+    language: sanitizeText(client?.language, 40),
+    platform: sanitizeText(client?.platform, 80),
+    screen: sanitizeText(client?.screen, 40),
+    timezone: sanitizeText(client?.timezone, 80),
+    network: {
+      effectiveType: sanitizeText(network.effectiveType, 20),
+      downlink: Number.isFinite(downlink) ? Math.max(downlink, 0) : null,
+      rtt: Number.isFinite(rtt) ? Math.max(rtt, 0) : null,
+      saveData: Boolean(network.saveData),
+    },
+  };
 }
 
 function getActiveSessionCount(sessions, now) {
@@ -54,35 +70,28 @@ function getTotalSessionCount(sessions) {
 
 async function writeStats({ sessionId, client, request }) {
   const now = Date.now();
-  const store = await getVisitorStore();
-  const sessions = store.sessions && typeof store.sessions === "object" ? store.sessions : {};
-  const previousSession = sessions[sessionId];
+  const nextStore = await firebaseTransaction("/visitorStats", (current) => {
+    const store = current && typeof current === "object" ? current : {};
+    const sessions = store.sessions && typeof store.sessions === "object" ? { ...store.sessions } : {};
+    const previousSession = sessions[sessionId];
 
-  sessions[sessionId] = {
-    firstSeen: previousSession?.firstSeen || now,
-    lastSeen: now,
-    client: client && typeof client === "object" ? client : previousSession?.client || null,
-    request,
-  };
+    sessions[sessionId] = {
+      firstSeen: previousSession?.firstSeen || now,
+      lastSeen: now,
+      client: client && typeof client === "object" ? sanitizeClient(client) : previousSession?.client || null,
+      request,
+    };
 
-  const visitors = Math.max(Number(store.total || 0), getTotalSessionCount(sessions));
+    return {
+      total: Math.max(Number(store.total || 0), getTotalSessionCount(sessions)),
+      updatedAt: now,
+      sessions,
+    };
+  });
+  const sessions = nextStore?.sessions || {};
+  const visitors = Math.max(Number(nextStore?.total || 0), getTotalSessionCount(sessions));
   const activeViewers = getActiveSessionCount(sessions, now);
   const plusCount = Math.max(activeViewers - 3, 0);
-  const nextStore = {
-    total: visitors,
-    updatedAt: now,
-    sessions,
-  };
-
-  try {
-    await firebaseRequest("/visitorStats", {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(nextStore),
-    });
-  } catch {
-    return fallbackStats;
-  }
 
   return {
     visitors,
@@ -119,7 +128,13 @@ export async function handler(event) {
       });
     }
 
-    const payload = event.body ? JSON.parse(event.body) : {};
+    const parsedBody = parseJsonBody(event, 32_000);
+
+    if (!parsedBody.ok) {
+      return jsonResponse(400, { error: parsedBody.error });
+    }
+
+    const payload = parsedBody.value;
     const sessionId = sanitizeSessionId(payload.sessionId);
 
     if (!sessionId) {
@@ -134,6 +149,6 @@ export async function handler(event) {
 
     return jsonResponse(200, stats);
   } catch {
-    return jsonResponse(200, fallbackStats);
+    return jsonResponse(503, { ...fallbackStats, error: "Visitor service is unavailable." });
   }
 }

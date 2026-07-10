@@ -69,11 +69,32 @@ export type PortfolioData = {
   timeline: TimelineItem[];
 };
 
-const cloudinaryProfileImage =
-  import.meta.env.VITE_PROFILE_IMAGE_URL ||
-  (import.meta.env.VITE_CLOUDINARY_NAME
-    ? `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_NAME}/image/upload/f_auto,q_auto/railey_c6guls`
-    : "");
+export const emptyPortfolio: PortfolioData = {
+  profile: {
+    name: "",
+    initials: "",
+    title: "",
+    location: "",
+    phone: "",
+    email: "",
+    summary: "",
+    bio: "",
+    goals: "",
+    githubUser: "",
+    imageUrl: "",
+    socials: [],
+  },
+  home: {
+    projectTitles: [],
+    certificationNames: [],
+    stackItems: [],
+  },
+  projects: [],
+  stackGroups: [],
+  skillGroups: [],
+  certifications: [],
+  timeline: [],
+};
 
 export const fallbackPortfolio: PortfolioData = {
   profile: {
@@ -90,7 +111,7 @@ export const fallbackPortfolio: PortfolioData = {
     goals:
       "I am looking for a software development role where I can apply my programming skills, keep improving through real projects, and contribute through hard work, adaptability, and continuous learning.",
     githubUser: "RaileySawada",
-    imageUrl: cloudinaryProfileImage,
+    imageUrl: "",
     socials: [
       { label: "GitHub", href: "https://github.com/RaileySawada" },
       { label: "LinkedIn", href: "https://www.linkedin.com/" },

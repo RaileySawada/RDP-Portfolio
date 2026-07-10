@@ -1,4 +1,4 @@
-import { enforceRateLimit, firebaseRequest, hashValue, jsonResponse, sanitizeText } from "./_security.js";
+import { enforceRateLimit, firebaseRequest, hashValue, jsonResponse, parseJsonBody, sanitizeText } from "./_security.js";
 
 const activeWindowMs = 90000;
 const dayMs = 24 * 60 * 60 * 1000;
@@ -157,7 +157,13 @@ export async function handler(event) {
       return rateLimit.response;
     }
 
-    const payload = event.body ? JSON.parse(event.body) : {};
+    const parsedBody = parseJsonBody(event, 16_000);
+
+    if (!parsedBody.ok) {
+      return jsonResponse(400, { error: parsedBody.error });
+    }
+
+    const payload = parsedBody.value;
     const isSessionValid = await validateSession(payload);
 
     if (!isSessionValid) {

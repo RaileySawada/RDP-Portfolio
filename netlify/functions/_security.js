@@ -2,11 +2,35 @@ import crypto from "node:crypto";
 
 const defaultRateLimitWindowMs = 60 * 1000;
 const defaultRateLimitMax = 60;
+const firebaseTimeoutMs = 10_000;
 const textMaxLength = 2000;
 const urlMaxLength = 500;
+const firebaseSignInUrl = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword";
+const firebaseRefreshUrl = "https://securetoken.googleapis.com/v1/token";
+
+let firebaseAuth = null;
+let firebaseAuthPromise = null;
 
 export function getDatabaseUrl() {
-  return (process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "").replace(/\/$/, "");
+  return (process.env.FIREBASE_DATABASE_URL || "").replace(/\/$/, "");
+}
+
+export function parseJsonBody(event, maxBytes = 1_000_000) {
+  const body = event.body || "";
+
+  if (Buffer.byteLength(body, "utf8") > maxBytes) {
+    return { ok: false, error: "Request body is too large." };
+  }
+
+  if (!body) {
+    return { ok: true, value: {} };
+  }
+
+  try {
+    return { ok: true, value: JSON.parse(body) };
+  } catch {
+    return { ok: false, error: "Request body must be valid JSON." };
+  }
 }
 
 export function jsonResponse(statusCode, body, headers = {}) {
@@ -39,20 +63,191 @@ export function getIpAddress(event) {
   return getHeader(event.headers, "client-ip") || getHeader(event.headers, "x-nf-client-connection-ip") || "unknown";
 }
 
-export async function firebaseRequest(path, init) {
+function getFirebaseAuthConfig() {
+  return {
+    apiKey: process.env.FIREBASE_API_KEY || "",
+    email: process.env.FIREBASE_SERVICE_EMAIL || "",
+    password: process.env.FIREBASE_SERVICE_PASSWORD || "",
+  };
+}
+
+async function readAuthResponse(response, message) {
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(`${message}: ${response.status}`);
+  }
+
+  return payload;
+}
+
+function cacheFirebaseAuth(payload) {
+  const idToken = payload?.idToken || payload?.access_token;
+  const refreshToken = payload?.refreshToken || payload?.refresh_token;
+  const expiresIn = Number(payload?.expiresIn || payload?.expires_in || 3600);
+
+  if (!idToken || !refreshToken) {
+    throw new Error("Firebase authentication response was incomplete");
+  }
+
+  firebaseAuth = {
+    idToken,
+    refreshToken,
+    expiresAt: Date.now() + Math.max(expiresIn - 60, 60) * 1000,
+  };
+
+  return idToken;
+}
+
+async function signInFirebaseServiceUser(config) {
+  const response = await fetch(`${firebaseSignInUrl}?key=${encodeURIComponent(config.apiKey)}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      email: config.email,
+      password: config.password,
+      returnSecureToken: true,
+    }),
+    signal: AbortSignal.timeout(firebaseTimeoutMs),
+  });
+  const payload = await readAuthResponse(response, "Firebase service-user sign-in failed");
+  return cacheFirebaseAuth(payload);
+}
+
+async function refreshFirebaseServiceUser(config) {
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: firebaseAuth.refreshToken,
+  });
+  const response = await fetch(`${firebaseRefreshUrl}?key=${encodeURIComponent(config.apiKey)}`, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body,
+    signal: AbortSignal.timeout(firebaseTimeoutMs),
+  });
+  const payload = await readAuthResponse(response, "Firebase service-user token refresh failed");
+  return cacheFirebaseAuth(payload);
+}
+
+async function getFirebaseIdToken() {
+  const config = getFirebaseAuthConfig();
+
+  if (!config.apiKey || !config.email || !config.password) {
+    throw new Error("Missing Firebase service-user configuration");
+  }
+
+  if (firebaseAuth?.idToken && firebaseAuth.expiresAt > Date.now()) {
+    return firebaseAuth.idToken;
+  }
+
+  if (firebaseAuthPromise) {
+    return firebaseAuthPromise;
+  }
+
+  firebaseAuthPromise = (async () => {
+    if (firebaseAuth?.refreshToken) {
+      try {
+        return await refreshFirebaseServiceUser(config);
+      } catch {
+        firebaseAuth = null;
+      }
+    }
+
+    return signInFirebaseServiceUser(config);
+  })();
+
+  try {
+    return await firebaseAuthPromise;
+  } finally {
+    firebaseAuthPromise = null;
+  }
+}
+
+async function getFirebaseRequestUrl(path) {
   const databaseUrl = getDatabaseUrl();
 
   if (!databaseUrl) {
     throw new Error("Missing Firebase database URL");
   }
 
-  const response = await fetch(`${databaseUrl}${path}.json`, init);
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(databaseUrl);
+  } catch {
+    throw new Error("Invalid Firebase database URL");
+  }
+
+  if (parsedUrl.protocol !== "https:") {
+    throw new Error("Firebase database URL must use HTTPS");
+  }
+
+  const idToken = await getFirebaseIdToken();
+  return `${databaseUrl}${path}.json?auth=${encodeURIComponent(idToken)}`;
+}
+
+async function firebaseFetch(path, init = {}) {
+  return fetch(await getFirebaseRequestUrl(path), {
+    ...init,
+    signal: init.signal || AbortSignal.timeout(firebaseTimeoutMs),
+  });
+}
+
+async function parseFirebaseResponse(response) {
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
+
+export async function firebaseRequest(path, init = {}) {
+  const response = await firebaseFetch(path, init);
 
   if (!response.ok) {
     throw new Error(`Firebase request failed: ${response.status}`);
   }
 
-  return response.json();
+  return parseFirebaseResponse(response);
+}
+
+export async function firebaseTransaction(path, update, maxAttempts = 4) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const readResponse = await firebaseFetch(path, {
+      method: "GET",
+      headers: { "x-firebase-etag": "true" },
+    });
+
+    if (!readResponse.ok) {
+      throw new Error(`Firebase transaction read failed: ${readResponse.status}`);
+    }
+
+    const current = await parseFirebaseResponse(readResponse);
+    const next = update(current);
+    const etag = readResponse.headers.get("etag");
+
+    if (!etag) {
+      throw new Error("Firebase transaction did not return an ETag");
+    }
+
+    const writeResponse = await firebaseFetch(path, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+        "if-match": etag,
+      },
+      body: JSON.stringify(next),
+    });
+
+    if (writeResponse.status === 412) {
+      continue;
+    }
+
+    if (!writeResponse.ok) {
+      throw new Error(`Firebase transaction write failed: ${writeResponse.status}`);
+    }
+
+    return parseFirebaseResponse(writeResponse);
+  }
+
+  throw new Error("Firebase transaction conflict limit reached");
 }
 
 export async function enforceRateLimit(event, options = {}) {
@@ -65,19 +260,13 @@ export async function enforceRateLimit(event, options = {}) {
   const path = `/security/rateLimits/${namespace}/${clientKey}`;
 
   try {
-    const current = await firebaseRequest(path, { method: "GET" });
-    const count = Number(current?.count || 0) + 1;
     const resetAt = windowStartedAt + windowMs;
-
-    await firebaseRequest(path, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        count,
-        resetAt,
-        lastSeenAt: now,
-      }),
-    });
+    const current = await firebaseTransaction(path, (previous) => ({
+      count: Math.max(Number(previous?.count || 0), 0) + 1,
+      resetAt,
+      lastSeenAt: now,
+    }));
+    const count = Number(current?.count || 0);
 
     if (count > max) {
       return {
