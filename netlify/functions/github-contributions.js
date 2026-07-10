@@ -1,3 +1,5 @@
+import { enforceRateLimit } from "./_security.js";
+
 const githubBaseUrl = "https://github.com";
 const githubGraphqlUrl = "https://api.github.com/graphql";
 const fallbackApiBaseUrl = "https://github-contributions-api.jogruber.de/v4";
@@ -186,6 +188,16 @@ async function fetchFallbackContributions(username) {
 export async function handler(event) {
   if (event.httpMethod !== "GET") {
     return jsonResponse(405, { error: "Method not allowed" }, "no-store");
+  }
+
+  const rateLimit = await enforceRateLimit(event, {
+    namespace: "github-contributions",
+    max: 90,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return rateLimit.response;
   }
 
   const username = sanitizeUsername(event.queryStringParameters?.user);

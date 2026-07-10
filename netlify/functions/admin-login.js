@@ -1,27 +1,10 @@
 import crypto from "node:crypto";
+import { enforceRateLimit, firebaseRequest, getHeader, getIpAddress, hashValue, jsonResponse } from "./_security.js";
 
 const rateLimitWindowMs = 15 * 60 * 1000;
 const lockMs = 15 * 60 * 1000;
 const maxAttempts = 5;
 const sessionTtlMs = 8 * 60 * 60 * 1000;
-
-function getDatabaseUrl() {
-  return (process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "").replace(/\/$/, "");
-}
-
-function getHeader(headers, name) {
-  const match = Object.entries(headers || {}).find(([key]) => key.toLowerCase() === name.toLowerCase());
-  return match?.[1] || "";
-}
-
-function getIpAddress(event) {
-  const forwardedFor = getHeader(event.headers, "x-forwarded-for");
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
-  }
-
-  return getHeader(event.headers, "client-ip") || getHeader(event.headers, "x-nf-client-connection-ip") || "unknown";
-}
 
 function getRequestInfo(event) {
   return {
@@ -33,39 +16,8 @@ function getRequestInfo(event) {
   };
 }
 
-function jsonResponse(statusCode, body) {
-  return {
-    statusCode,
-    headers: {
-      "cache-control": "no-store",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(body),
-  };
-}
-
-function hashValue(value) {
-  return crypto.createHash("sha256").update(value).digest("hex");
-}
-
 function createToken() {
   return crypto.randomBytes(32).toString("base64url");
-}
-
-async function firebaseRequest(path, init) {
-  const databaseUrl = getDatabaseUrl();
-
-  if (!databaseUrl) {
-    throw new Error("Missing Firebase database URL");
-  }
-
-  const response = await fetch(`${databaseUrl}${path}.json`, init);
-
-  if (!response.ok) {
-    throw new Error(`Firebase request failed: ${response.status}`);
-  }
-
-  return response.json();
 }
 
 function normalizeEmail(email) {
@@ -176,6 +128,16 @@ export async function handler(event) {
   }
 
   try {
+    const rateLimit = await enforceRateLimit(event, {
+      namespace: "admin-login",
+      max: 15,
+      windowMs: rateLimitWindowMs,
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimit.response;
+    }
+
     const payload = event.body ? JSON.parse(event.body) : {};
 
     if (!isValidPayload(payload)) {

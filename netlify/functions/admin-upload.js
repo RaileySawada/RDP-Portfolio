@@ -1,46 +1,12 @@
 import crypto from "node:crypto";
-
-function getDatabaseUrl() {
-  return (process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "").replace(/\/$/, "");
-}
+import { enforceRateLimit, firebaseRequest, hashValue, jsonResponse } from "./_security.js";
 
 function getCloudinaryConfig() {
   return {
-    cloudName: process.env.CLOUDINARY_NAME || process.env.VITE_CLOUDINARY_NAME || "",
-    apiKey: process.env.CLOUDINARY_API_KEY || process.env.VITE_CLOUDINARI_API || "",
-    apiSecret: process.env.CLOUDINARY_API_SECRET || process.env.VITE_CLOUDINARY_SECRET || "",
+    cloudName: process.env.CLOUDINARY_NAME || "",
+    apiKey: process.env.CLOUDINARY_API_KEY || "",
+    apiSecret: process.env.CLOUDINARY_API_SECRET || "",
   };
-}
-
-function jsonResponse(statusCode, body) {
-  return {
-    statusCode,
-    headers: {
-      "cache-control": "no-store",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(body),
-  };
-}
-
-function hashValue(value) {
-  return crypto.createHash("sha256").update(value).digest("hex");
-}
-
-async function firebaseRequest(path, init) {
-  const databaseUrl = getDatabaseUrl();
-
-  if (!databaseUrl) {
-    throw new Error("Missing Firebase database URL");
-  }
-
-  const response = await fetch(`${databaseUrl}${path}.json`, init);
-
-  if (!response.ok) {
-    throw new Error(`Firebase request failed: ${response.status}`);
-  }
-
-  return response.json();
 }
 
 async function validateSession(payload) {
@@ -70,6 +36,16 @@ export async function handler(event) {
   }
 
   try {
+    const rateLimit = await enforceRateLimit(event, {
+      namespace: "admin-upload",
+      max: 20,
+      windowMs: 60 * 1000,
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimit.response;
+    }
+
     const payload = event.body ? JSON.parse(event.body) : {};
     const isSessionValid = await validateSession(payload);
 

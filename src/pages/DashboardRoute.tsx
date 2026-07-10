@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { Navigate, useLocation, useNavigate } from "react-router";
 import { AdminDashboard } from "../components/admin/AdminDashboard";
 import type { ThemePreference } from "../hooks/useTheme";
 import { getStoredAdminSession, loginAdmin, storeAdminSession, type AdminSession } from "../services/adminAuth";
@@ -21,14 +21,14 @@ export function DashboardRoute({ selectedTheme, onSelectTheme }: DashboardRouteP
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [session, setSession] = useState<AdminSession | null>(() => getStoredAdminSession());
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isLoginPath = location.pathname === "/rdp-login" || location.pathname === "/dashboard-login";
+  const isAdminPath = location.pathname.startsWith("/rdp-admin");
 
   useEffect(() => {
-    const isLoginPath = location.pathname === "/rdp-login" || location.pathname === "/dashboard-login";
-
     if (session && (isLoginPath || location.pathname === "/rdp-admin")) {
       navigate("/rdp-admin/analytics", { replace: true });
     }
-  }, [location.pathname, navigate, session]);
+  }, [isLoginPath, location.pathname, navigate, session]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -72,6 +72,10 @@ export function DashboardRoute({ selectedTheme, onSelectTheme }: DashboardRouteP
 
   if (session) {
     return <AdminDashboard session={session} selectedTheme={selectedTheme} onSelectTheme={onSelectTheme} onLogout={() => setSession(null)} />;
+  }
+
+  if (isAdminPath) {
+    return <Navigate to="/rdp-login" replace />;
   }
 
   return (

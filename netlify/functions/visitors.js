@@ -1,3 +1,5 @@
+import { enforceRateLimit, firebaseRequest, getHeader, getIpAddress, jsonResponse, sanitizeText } from "./_security.js";
+
 const activeWindowMs = 90000;
 const fallbackStats = {
   visitors: 0,
@@ -5,59 +7,29 @@ const fallbackStats = {
   plusCount: 0,
 };
 
-function getDatabaseUrl() {
-  return (process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "").replace(/\/$/, "");
-}
-
 function sanitizeSessionId(sessionId) {
   return String(sessionId || "")
     .replace(/[^a-zA-Z0-9_-]/g, "")
     .slice(0, 80);
 }
 
-function getHeader(headers, name) {
-  const match = Object.entries(headers || {}).find(([key]) => key.toLowerCase() === name.toLowerCase());
-  return match?.[1] || "";
-}
-
-function getIpAddress(event) {
-  const forwardedFor = getHeader(event.headers, "x-forwarded-for");
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0].trim();
-  }
-
-  return getHeader(event.headers, "client-ip") || getHeader(event.headers, "x-nf-client-connection-ip") || "unknown";
-}
-
 function getRequestInfo(event) {
   return {
     ip: getIpAddress(event),
-    userAgent: getHeader(event.headers, "user-agent"),
-    country: getHeader(event.headers, "x-country"),
-    city: getHeader(event.headers, "x-nf-geo-city"),
-    region: getHeader(event.headers, "x-nf-geo-subdivision"),
+    userAgent: sanitizeText(getHeader(event.headers, "user-agent"), 300),
+    country: sanitizeText(getHeader(event.headers, "x-country"), 80),
+    city: sanitizeText(getHeader(event.headers, "x-nf-geo-city"), 80),
+    region: sanitizeText(getHeader(event.headers, "x-nf-geo-subdivision"), 80),
   };
 }
 
-async function firebaseRequest(path, init) {
-  const databaseUrl = getDatabaseUrl();
-
-  if (!databaseUrl) {
-    return null;
-  }
-
-  const response = await fetch(`${databaseUrl}${path}.json`, init);
-
-  if (!response.ok) {
-    return null;
-  }
-
-  return response.json();
-}
-
 async function getVisitorStore() {
-  const store = await firebaseRequest("/visitorStats", { method: "GET" });
-  return store && typeof store === "object" ? store : {};
+  try {
+    const store = await firebaseRequest("/visitorStats", { method: "GET" });
+    return store && typeof store === "object" ? store : {};
+  } catch {
+    return {};
+  }
 }
 
 function getActiveSessionCount(sessions, now) {
@@ -102,11 +74,15 @@ async function writeStats({ sessionId, client, request }) {
     sessions,
   };
 
-  await firebaseRequest("/visitorStats", {
-    method: "PUT",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(nextStore),
-  });
+  try {
+    await firebaseRequest("/visitorStats", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(nextStore),
+    });
+  } catch {
+    return fallbackStats;
+  }
 
   return {
     visitors,
@@ -117,42 +93,37 @@ async function writeStats({ sessionId, client, request }) {
 
 export async function handler(event) {
   if (event.httpMethod !== "GET" && event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ error: "Method not allowed" }),
-    };
+    return jsonResponse(405, { error: "Method not allowed" });
   }
 
   try {
+    const rateLimit = await enforceRateLimit(event, {
+      namespace: "visitors",
+      max: 120,
+      windowMs: 60 * 1000,
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimit.response;
+    }
+
     if (event.httpMethod === "GET") {
       const now = Date.now();
       const store = await getVisitorStore();
       const activeViewers = getActiveSessionCount(store.sessions, now);
 
-      return {
-        statusCode: 200,
-        headers: {
-          "cache-control": "no-store",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          visitors: Number(store.total || 0),
-          activeViewers,
-          plusCount: Math.max(activeViewers - 3, 0),
-        }),
-      };
+      return jsonResponse(200, {
+        visitors: Number(store.total || 0),
+        activeViewers,
+        plusCount: Math.max(activeViewers - 3, 0),
+      });
     }
 
     const payload = event.body ? JSON.parse(event.body) : {};
     const sessionId = sanitizeSessionId(payload.sessionId);
 
     if (!sessionId) {
-      return {
-        statusCode: 400,
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ error: "Missing sessionId" }),
-      };
+      return jsonResponse(400, { error: "Missing sessionId" });
     }
 
     const stats = await writeStats({
@@ -161,22 +132,8 @@ export async function handler(event) {
       request: getRequestInfo(event),
     });
 
-    return {
-      statusCode: 200,
-      headers: {
-        "cache-control": "no-store",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(stats),
-    };
+    return jsonResponse(200, stats);
   } catch {
-    return {
-      statusCode: 200,
-      headers: {
-        "cache-control": "no-store",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(fallbackStats),
-    };
+    return jsonResponse(200, fallbackStats);
   }
 }

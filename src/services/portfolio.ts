@@ -64,14 +64,8 @@ function normalizeStackGroups(groups: PortfolioData["stackGroups"]): PortfolioDa
 }
 
 export async function getPortfolioData(): Promise<PortfolioData> {
-  const databaseUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL;
-
-  if (!databaseUrl) {
-    return fallbackPortfolio;
-  }
-
   try {
-    const response = await fetch(`${databaseUrl.replace(/\/$/, "")}/portfolio.json`, { cache: "no-store" });
+    const response = await fetch("/.netlify/functions/portfolio", { cache: "no-store" });
 
     if (!response.ok) {
       return fallbackPortfolio;
@@ -85,37 +79,6 @@ export async function getPortfolioData(): Promise<PortfolioData> {
 }
 
 export function subscribePortfolioData(onChange: (portfolio: PortfolioData) => void): () => void {
-  const databaseUrl = import.meta.env.VITE_FIREBASE_DATABASE_URL?.replace(/\/$/, "");
-
-  if (!databaseUrl || typeof EventSource === "undefined") {
-    void getPortfolioData().then(onChange);
-    return () => undefined;
-  }
-
-  const source = new EventSource(`${databaseUrl}/portfolio.json`);
-  const refreshPortfolio = () => {
-    void getPortfolioData().then(onChange);
-  };
-  const handlePortfolioEvent = (event: MessageEvent<string>) => {
-    try {
-      const payload = JSON.parse(event.data) as { data?: unknown; path?: string };
-
-      if (payload.path === "/" && hasPortfolioShape(payload.data)) {
-        onChange(normalizePortfolioData(payload.data));
-        return;
-      }
-
-      refreshPortfolio();
-    } catch {
-      // Keep the current portfolio if Firebase sends a malformed stream event.
-    }
-  };
-
-  source.addEventListener("put", handlePortfolioEvent);
-  source.addEventListener("patch", handlePortfolioEvent);
-  source.onerror = () => {
-    refreshPortfolio();
-  };
-
-  return () => source.close();
+  void getPortfolioData().then(onChange);
+  return () => undefined;
 }

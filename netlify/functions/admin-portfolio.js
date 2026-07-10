@@ -1,39 +1,4 @@
-import crypto from "node:crypto";
-
-function getDatabaseUrl() {
-  return (process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "").replace(/\/$/, "");
-}
-
-function jsonResponse(statusCode, body) {
-  return {
-    statusCode,
-    headers: {
-      "cache-control": "no-store",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(body),
-  };
-}
-
-function hashValue(value) {
-  return crypto.createHash("sha256").update(value).digest("hex");
-}
-
-async function firebaseRequest(path, init) {
-  const databaseUrl = getDatabaseUrl();
-
-  if (!databaseUrl) {
-    throw new Error("Missing Firebase database URL");
-  }
-
-  const response = await fetch(`${databaseUrl}${path}.json`, init);
-
-  if (!response.ok) {
-    throw new Error(`Firebase request failed: ${response.status}`);
-  }
-
-  return response.json();
-}
+import { enforceRateLimit, firebaseRequest, hashValue, jsonResponse, sanitizePortfolioData } from "./_security.js";
 
 async function validateSession(payload) {
   const id = String(payload?.session?.id || "").replace(/[^a-zA-Z0-9_-]/g, "");
@@ -70,6 +35,16 @@ export async function handler(event) {
   }
 
   try {
+    const rateLimit = await enforceRateLimit(event, {
+      namespace: "admin-portfolio",
+      max: 30,
+      windowMs: 60 * 1000,
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimit.response;
+    }
+
     const payload = event.body ? JSON.parse(event.body) : {};
     const isSessionValid = await validateSession(payload);
 
@@ -81,10 +56,12 @@ export async function handler(event) {
       return jsonResponse(400, { error: "Invalid portfolio payload." });
     }
 
+    const sanitizedPortfolio = sanitizePortfolioData(payload.portfolio);
+
     await firebaseRequest("/portfolio", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload.portfolio),
+      body: JSON.stringify(sanitizedPortfolio),
     });
 
     return jsonResponse(200, { ok: true });

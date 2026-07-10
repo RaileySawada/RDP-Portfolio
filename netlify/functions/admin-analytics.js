@@ -1,42 +1,7 @@
-import crypto from "node:crypto";
+import { enforceRateLimit, firebaseRequest, hashValue, jsonResponse, sanitizeText } from "./_security.js";
 
 const activeWindowMs = 90000;
 const dayMs = 24 * 60 * 60 * 1000;
-
-function getDatabaseUrl() {
-  return (process.env.FIREBASE_DATABASE_URL || process.env.VITE_FIREBASE_DATABASE_URL || "").replace(/\/$/, "");
-}
-
-function jsonResponse(statusCode, body) {
-  return {
-    statusCode,
-    headers: {
-      "cache-control": "no-store",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(body),
-  };
-}
-
-function hashValue(value) {
-  return crypto.createHash("sha256").update(value).digest("hex");
-}
-
-async function firebaseRequest(path, init) {
-  const databaseUrl = getDatabaseUrl();
-
-  if (!databaseUrl) {
-    throw new Error("Missing Firebase database URL");
-  }
-
-  const response = await fetch(`${databaseUrl}${path}.json`, init);
-
-  if (!response.ok) {
-    throw new Error(`Firebase request failed: ${response.status}`);
-  }
-
-  return response.json();
-}
 
 function getDayKey(timestamp) {
   const date = new Date(timestamp);
@@ -86,24 +51,24 @@ function buildActivityEvents(adminAuthStore) {
     actor: event.actor || "System Admin",
     event: event.event || "admin.activity",
     target: event.target || "admin",
-    ipAddress: event.ipAddress || "unknown",
-    userAgent: event.userAgent || "unknown",
+    ipAddress: sanitizeText(event.ipAddress || "unknown", 80),
+    userAgent: sanitizeText(event.userAgent || "unknown", 300),
     time: Number(event.time || 0),
   }));
   const sessionEvents = Object.values(adminAuthStore?.sessions || {}).map((session) => ({
     actor: session.email || "System Admin",
     event: "admin.login.session_created",
     target: "adminAuth/sessions",
-    ipAddress: session.request?.ip || "unknown",
-    userAgent: session.request?.userAgent || "unknown",
+    ipAddress: sanitizeText(session.request?.ip || "unknown", 80),
+    userAgent: sanitizeText(session.request?.userAgent || "unknown", 300),
     time: Number(session.createdAt || 0),
   }));
   const attemptEvents = Object.values(adminAuthStore?.loginAttempts || {}).map((attempt) => ({
     actor: attempt.email || "System Admin",
     event: Number(attempt.lockedUntil || 0) > Date.now() ? "admin.login.locked" : "admin.login.attempt",
     target: "adminAuth/loginAttempts",
-    ipAddress: attempt.request?.ip || "unknown",
-    userAgent: attempt.request?.userAgent || "unknown",
+    ipAddress: sanitizeText(attempt.request?.ip || "unknown", 80),
+    userAgent: sanitizeText(attempt.request?.userAgent || "unknown", 300),
     time: Number(attempt.lastAttemptAt || 0),
   }));
 
@@ -182,6 +147,16 @@ export async function handler(event) {
   }
 
   try {
+    const rateLimit = await enforceRateLimit(event, {
+      namespace: "admin-analytics",
+      max: 60,
+      windowMs: 60 * 1000,
+    });
+
+    if (!rateLimit.allowed) {
+      return rateLimit.response;
+    }
+
     const payload = event.body ? JSON.parse(event.body) : {};
     const isSessionValid = await validateSession(payload);
 
