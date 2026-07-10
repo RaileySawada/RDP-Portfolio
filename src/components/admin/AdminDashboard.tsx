@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { profile } from "../../data/portfolio";
+import type { Profile } from "../../data/portfolio";
 import type { ThemePreference } from "../../hooks/useTheme";
 import { clearAdminSession, type AdminSession } from "../../services/adminAuth";
 import { fetchAdminAnalytics, fallbackAnalytics, type AdminAnalytics } from "../../services/adminAnalytics";
@@ -8,11 +8,13 @@ import { MenuIcon } from "../ui/Icons";
 import { DataState } from "../ui/DataState";
 import { AdminActivityTable } from "./AdminActivityTable";
 import { AdminContentEditor } from "./AdminContentEditor";
+import { AdminVisitorDevices } from "./AdminVisitorDevices";
 import { AdminSidebar, type AdminView } from "./AdminSidebar";
 import { ViewerDonutChart } from "./ViewerDonutChart";
 import { ViewerLineChart } from "./ViewerLineChart";
 
 type AdminDashboardProps = {
+  portfolioProfile: Profile | null;
   session: AdminSession;
   selectedTheme: ThemePreference;
   onSelectTheme: (theme: ThemePreference, originElement: HTMLElement) => void;
@@ -20,10 +22,10 @@ type AdminDashboardProps = {
 };
 
 function isAdminView(view: string | undefined): view is AdminView {
-  return view === "analytics" || view === "content" || view === "account";
+  return view === "analytics" || view === "devices" || view === "content" || view === "account";
 }
 
-export function AdminDashboard({ session, selectedTheme, onSelectTheme, onLogout }: AdminDashboardProps) {
+export function AdminDashboard({ portfolioProfile, session, selectedTheme, onSelectTheme, onLogout }: AdminDashboardProps) {
   const navigate = useNavigate();
   const { view } = useParams();
   const [analytics, setAnalytics] = useState<AdminAnalytics>(fallbackAnalytics);
@@ -80,6 +82,7 @@ export function AdminDashboard({ session, selectedTheme, onSelectTheme, onLogout
       <AdminSidebar
         activeView={activeView}
         adminProfile={analytics.adminProfile}
+        portfolioProfile={portfolioProfile}
         isOpen={sidebarOpen}
         selectedTheme={selectedTheme}
         onClose={() => setSidebarOpen(false)}
@@ -90,10 +93,12 @@ export function AdminDashboard({ session, selectedTheme, onSelectTheme, onLogout
       <div className="admin-dashboard-main">
         {activeView === "analytics" ? (
           <AdminAnalyticsView analytics={analytics} isLoading={isLoading} />
+        ) : activeView === "devices" ? (
+          <AdminVisitorDevices devices={analytics.visitorDevices} isLoading={isLoading} />
         ) : activeView === "content" ? (
           <AdminContentEditor session={session} />
         ) : (
-          <AdminAccountView adminProfile={analytics.adminProfile} />
+          <AdminAccountView adminProfile={analytics.adminProfile} portfolioProfile={portfolioProfile} />
         )}
       </div>
     </section>
@@ -173,7 +178,9 @@ function AdminAnalyticsView({ analytics, isLoading }: { analytics: AdminAnalytic
   );
 }
 
-function AdminAccountView({ adminProfile }: { adminProfile: AdminAnalytics["adminProfile"] }) {
+function AdminAccountView({ adminProfile, portfolioProfile }: { adminProfile: AdminAnalytics["adminProfile"]; portfolioProfile: Profile | null }) {
+  const initials = portfolioProfile?.initials || adminProfile.name.slice(0, 2).toUpperCase();
+
   return (
     <div className="mx-auto max-w-6xl">
       <header className="admin-dashboard-header">
@@ -185,16 +192,16 @@ function AdminAccountView({ adminProfile }: { adminProfile: AdminAnalytics["admi
       <div className="admin-account-panel">
         <span className="admin-decor-dot admin-decor-dot-c" aria-hidden="true" />
         <div className="admin-account-image">
-          {profile.imageUrl ? (
-            <img src={profile.imageUrl} alt={profile.name} />
+          {portfolioProfile?.imageUrl ? (
+            <img src={portfolioProfile.imageUrl} alt={portfolioProfile.name || adminProfile.name} />
           ) : (
-            <span>{profile.initials}</span>
+            <span>{initials}</span>
           )}
         </div>
         <div>
           <p className="metadata text-neutral-500 dark:text-neutral-500">Signed in as</p>
           <h2>{adminProfile.name}</h2>
-          <p>{adminProfile.email || profile.email}</p>
+          <p>{adminProfile.email || portfolioProfile?.email}</p>
           <p>Role: {adminProfile.role}</p>
         </div>
       </div>

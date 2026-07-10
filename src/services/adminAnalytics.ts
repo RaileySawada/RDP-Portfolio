@@ -20,6 +20,21 @@ export type AdminActivityEvent = {
   time: number;
 };
 
+export type AdminVisitorDevice = {
+  id: string;
+  browser: string;
+  platform: string;
+  screen: string;
+  language: string;
+  timezone: string;
+  network: string;
+  location: string;
+  ipAddress: string;
+  firstSeen: number;
+  lastSeen: number;
+  isActive: boolean;
+};
+
 export type AdminProfile = {
   name: string;
   email: string;
@@ -36,6 +51,7 @@ export type AdminAnalytics = {
   browserSlices: ViewerSlice[];
   networkSlices: ViewerSlice[];
   activityEvents: AdminActivityEvent[];
+  visitorDevices: AdminVisitorDevice[];
   lastUpdatedAt: number;
 };
 
@@ -53,6 +69,7 @@ export const fallbackAnalytics: AdminAnalytics = {
   browserSlices: [],
   networkSlices: [],
   activityEvents: [],
+  visitorDevices: [],
   lastUpdatedAt: 0,
 };
 
@@ -65,7 +82,17 @@ export async function fetchAdminAnalytics(session: AdminSession): Promise<AdminA
     });
 
     if (response.ok) {
-      return (await response.json()) as AdminAnalytics;
+      const data = (await response.json()) as Partial<AdminAnalytics>;
+
+      return {
+        ...fallbackAnalytics,
+        ...data,
+        viewerSeries: Array.isArray(data.viewerSeries) ? data.viewerSeries : [],
+        browserSlices: Array.isArray(data.browserSlices) ? data.browserSlices : [],
+        networkSlices: Array.isArray(data.networkSlices) ? data.networkSlices : [],
+        activityEvents: Array.isArray(data.activityEvents) ? data.activityEvents : [],
+        visitorDevices: Array.isArray(data.visitorDevices) ? data.visitorDevices : [],
+      };
     }
   } catch {
     return fallbackAnalytics;

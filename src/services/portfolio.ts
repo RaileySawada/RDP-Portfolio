@@ -1,4 +1,4 @@
-import type { PortfolioData } from "../data/portfolio";
+import { fallbackPortfolio, type PortfolioData } from "../data/portfolio";
 
 function hasPortfolioShape(value: unknown): value is PortfolioData {
   if (!value || typeof value !== "object") {
@@ -66,14 +66,24 @@ export async function getPortfolioData(): Promise<PortfolioData | null> {
     const response = await fetch("/.netlify/functions/portfolio", { cache: "no-store" });
 
     if (!response.ok) {
-      return null;
+      return getDevelopmentPortfolio();
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+
+    if (!contentType.includes("application/json")) {
+      return getDevelopmentPortfolio();
     }
 
     const data: unknown = await response.json();
-    return hasPortfolioShape(data) ? normalizePortfolioData(data) : null;
+    return hasPortfolioShape(data) ? normalizePortfolioData(data) : getDevelopmentPortfolio();
   } catch {
-    return null;
+    return getDevelopmentPortfolio();
   }
+}
+
+function getDevelopmentPortfolio(): PortfolioData | null {
+  return import.meta.env.DEV ? normalizePortfolioData(fallbackPortfolio) : null;
 }
 
 export function subscribePortfolioData(onChange: (portfolio: PortfolioData | null) => void): () => void {

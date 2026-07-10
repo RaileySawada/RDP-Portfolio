@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { profile } from "../../data/portfolio";
+import type { Profile } from "../../data/portfolio";
 import type { ThemePreference } from "../../hooks/useTheme";
 import type { AdminProfile } from "../../services/adminAnalytics";
-import { BarChartIcon, CloseIcon, EditIcon, ExternalLinkIcon, LogOutIcon } from "../ui/Icons";
+import { BarChartIcon, CloseIcon, EditIcon, ExternalLinkIcon, LogOutIcon, MonitorIcon } from "../ui/Icons";
 import { ThemeToggle } from "../layout/ThemeToggle";
 
-type AdminView = "analytics" | "content" | "account";
+type AdminView = "analytics" | "devices" | "content" | "account";
 type ContentSection = "home" | "links" | "projects" | "certifications" | "stack" | "skills";
 
 type AdminSidebarProps = {
   activeView: AdminView;
   adminProfile: AdminProfile;
+  portfolioProfile: Profile | null;
   isOpen: boolean;
   selectedTheme: ThemePreference;
   onClose: () => void;
@@ -29,7 +30,7 @@ const contentNav: { label: string; section: ContentSection }[] = [
   { label: "Skills", section: "skills" },
 ];
 
-export function AdminSidebar({ activeView, adminProfile, isOpen, selectedTheme, onClose, onSelectTheme, onSelectView, onLogout }: AdminSidebarProps) {
+export function AdminSidebar({ activeView, adminProfile, portfolioProfile, isOpen, selectedTheme, onClose, onSelectTheme, onSelectView, onLogout }: AdminSidebarProps) {
   const navigate = useNavigate();
   const { section } = useParams();
   const [contentOpen, setContentOpen] = useState(activeView === "content");
@@ -91,6 +92,10 @@ export function AdminSidebar({ activeView, adminProfile, isOpen, selectedTheme, 
               <BarChartIcon />
               <span>Analytics</span>
             </button>
+            <button className={activeView === "devices" ? "is-active" : ""} type="button" onClick={() => selectView("devices")}>
+              <MonitorIcon />
+              <span>Visitor devices</span>
+            </button>
           </div>
 
           <div className="admin-sidebar-nav-group">
@@ -128,10 +133,10 @@ export function AdminSidebar({ activeView, adminProfile, isOpen, selectedTheme, 
           </a>
           <div className={`admin-sidebar-profile ${activeView === "account" ? "is-active" : ""}`}>
             <button className="admin-sidebar-profile-main" type="button" onClick={() => selectView("account")}>
-              {profile.imageUrl ? (
-                <img src={profile.imageUrl} alt={profile.name} />
+              {portfolioProfile?.imageUrl ? (
+                <img src={portfolioProfile.imageUrl} alt={portfolioProfile.name || adminProfile.name} />
               ) : (
-                <span>{profile.initials.slice(0, 2)}</span>
+                <span>{portfolioProfile?.initials.slice(0, 2) || adminProfile.name.slice(0, 2).toUpperCase()}</span>
               )}
               <span>
                 <strong>{adminProfile.name}</strong>

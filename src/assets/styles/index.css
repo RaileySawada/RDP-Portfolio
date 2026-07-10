@@ -1588,6 +1588,37 @@ body {
   font-weight: 760;
 }
 
+.admin-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  color: inherit;
+  text-align: left;
+}
+
+.admin-sort-button:focus-visible {
+  border-radius: 3px;
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+
+.admin-sort-indicator {
+  color: rgb(163 163 163);
+  font-size: 12px;
+  line-height: 1;
+}
+
+th[aria-sort="ascending"] .admin-sort-indicator,
+th[aria-sort="descending"] .admin-sort-indicator {
+  color: rgb(10 10 10);
+}
+
+.dark th[aria-sort="ascending"] .admin-sort-indicator,
+.dark th[aria-sort="descending"] .admin-sort-indicator {
+  color: rgb(255 255 255);
+}
+
 .dark .admin-activity-table th {
   background: rgb(18 18 18);
   color: rgb(212 212 212);
@@ -1622,6 +1653,95 @@ body {
 
 .dark .admin-activity-footer {
   color: rgb(163 163 163);
+}
+
+.admin-device-count {
+  border-radius: 999px;
+  border: 1px solid rgb(229 229 229);
+  background: rgb(255 255 255);
+  padding: 8px 12px;
+  color: rgb(64 64 64);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dark .admin-device-count {
+  border-color: rgb(38 38 38);
+  background: rgb(10 10 10);
+  color: rgb(212 212 212);
+}
+
+.admin-device-table {
+  margin-top: 24px;
+}
+
+.admin-device-table table {
+  min-width: 1160px;
+}
+
+.admin-device-table td strong,
+.admin-device-table td small {
+  display: block;
+}
+
+.admin-device-table td strong {
+  color: rgb(10 10 10);
+  font-weight: 720;
+}
+
+.dark .admin-device-table td strong {
+  color: rgb(255 255 255);
+}
+
+.admin-device-table td small {
+  margin-top: 3px;
+  color: rgb(115 115 115);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dark .admin-device-table td small {
+  color: rgb(163 163 163);
+}
+
+.admin-device-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: rgb(115 115 115);
+  font-weight: 700;
+}
+
+.admin-device-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgb(163 163 163);
+}
+
+.admin-device-status.is-active {
+  color: rgb(22 101 52);
+}
+
+.admin-device-status.is-active i {
+  background: rgb(34 197 94);
+  box-shadow: 0 0 0 4px rgb(34 197 94 / 12%);
+}
+
+.dark .admin-device-status.is-active {
+  color: rgb(134 239 172);
+}
+
+@media (max-width: 640px) {
+  .admin-activity-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-activity-header label {
+    width: 100%;
+  }
 }
 
 .viewer-donut {

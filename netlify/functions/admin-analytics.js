@@ -78,6 +78,34 @@ function buildActivityEvents(adminAuthStore) {
     .slice(0, 30);
 }
 
+function buildVisitorDevices(sessions, now) {
+  return Object.entries(sessions)
+    .map(([sessionId, session]) => {
+      const request = session?.request || {};
+      const client = session?.client || {};
+      const network = client.network || {};
+      const location = [request.city, request.region, request.country].filter(Boolean).join(", ");
+      const firstSeen = Number(session?.firstSeen || 0);
+      const lastSeen = Number(session?.lastSeen || 0);
+
+      return {
+        id: sanitizeText(sessionId, 80),
+        browser: sanitizeText(client.browser || "Unknown", 80),
+        platform: sanitizeText(client.platform || "Unknown", 80),
+        screen: sanitizeText(client.screen || "Unknown", 40),
+        language: sanitizeText(client.language || "Unknown", 40),
+        timezone: sanitizeText(client.timezone || "Unknown", 80),
+        network: sanitizeText(network.effectiveType || "Unknown", 20),
+        location: sanitizeText(location || "Unknown", 240),
+        ipAddress: sanitizeText(request.ip || "Unknown", 80),
+        firstSeen,
+        lastSeen,
+        isActive: Boolean(lastSeen && now - lastSeen <= activeWindowMs),
+      };
+    })
+    .sort((a, b) => b.lastSeen - a.lastSeen);
+}
+
 function buildAnalytics(store, adminAuthStore) {
   const now = Date.now();
   const credentials = adminAuthStore?.credentials || {};
@@ -137,6 +165,7 @@ function buildAnalytics(store, adminAuthStore) {
     browserSlices: toSlices(browserMap),
     networkSlices: toSlices(networkMap),
     activityEvents: buildActivityEvents(adminAuthStore || {}),
+    visitorDevices: buildVisitorDevices(store?.sessions || {}, now),
     lastUpdatedAt: Number(store?.updatedAt || now),
   };
 }

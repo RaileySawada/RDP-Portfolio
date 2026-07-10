@@ -5,6 +5,17 @@ type AdminActivityTableProps = {
   events: AdminActivityEvent[];
 };
 
+type SortKey = "actor" | "event" | "target" | "ipAddress" | "time";
+type SortDirection = "ascending" | "descending";
+
+const columns: { key: SortKey; label: string }[] = [
+  { key: "actor", label: "Actor" },
+  { key: "event", label: "Event" },
+  { key: "target", label: "Target" },
+  { key: "ipAddress", label: "IP address" },
+  { key: "time", label: "Time" },
+];
+
 function formatTime(timestamp: number) {
   if (!timestamp) {
     return "Unknown";
@@ -18,20 +29,36 @@ function formatTime(timestamp: number) {
 
 export function AdminActivityTable({ events }: AdminActivityTableProps) {
   const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("time");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("descending");
   const filteredEvents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    if (!normalizedQuery) {
-      return events;
-    }
-
-    return events.filter((event) => {
+    const matchingEvents = normalizedQuery ? events.filter((event) => {
       return [event.actor, event.event, event.target, event.ipAddress, event.userAgent]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery);
+    }) : events;
+
+    return [...matchingEvents].sort((first, second) => {
+      const comparison = sortKey === "time"
+        ? first.time - second.time
+        : first[sortKey].localeCompare(second[sortKey], undefined, { sensitivity: "base" });
+
+      return sortDirection === "ascending" ? comparison : -comparison;
     });
-  }, [events, query]);
+  }, [events, query, sortDirection, sortKey]);
+
+  const changeSort = (nextKey: SortKey) => {
+    if (nextKey === sortKey) {
+      setSortDirection((current) => current === "ascending" ? "descending" : "ascending");
+      return;
+    }
+
+    setSortKey(nextKey);
+    setSortDirection(nextKey === "time" ? "descending" : "ascending");
+  };
 
   return (
     <div className="admin-activity-table">
@@ -55,11 +82,19 @@ export function AdminActivityTable({ events }: AdminActivityTableProps) {
         <table>
           <thead>
             <tr>
-              <th>Actor</th>
-              <th>Event</th>
-              <th>Target</th>
-              <th>IP address</th>
-              <th>Time</th>
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  aria-sort={sortKey === column.key ? sortDirection : "none"}
+                >
+                  <button type="button" className="admin-sort-button" onClick={() => changeSort(column.key)}>
+                    <span>{column.label}</span>
+                    <span className="admin-sort-indicator" aria-hidden="true">
+                      {sortKey === column.key ? (sortDirection === "ascending" ? "↑" : "↓") : "↕"}
+                    </span>
+                  </button>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>

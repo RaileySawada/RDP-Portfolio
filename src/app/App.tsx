@@ -85,11 +85,11 @@ function PortfolioApp() {
           <Route path="/stack" element={portfolio ? <StackPage portfolio={portfolio} /> : <PortfolioDataState isLoading={isPortfolioLoading} />} />
           <Route path="/certifications" element={portfolio ? <CertificationsPage portfolio={portfolio} /> : <PortfolioDataState isLoading={isPortfolioLoading} />} />
           <Route path="/about" element={portfolio ? <AboutPage portfolio={portfolio} /> : <PortfolioDataState isLoading={isPortfolioLoading} />} />
-          <Route path="/rdp-login" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
-          <Route path="/rdp-admin" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
-          <Route path="/rdp-admin/:view" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
-          <Route path="/rdp-admin/:view/:section" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
-          <Route path="/dashboard-login" element={<DashboardRoute selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
+          <Route path="/rdp-login" element={<DashboardRoute portfolioProfile={portfolio?.profile ?? null} selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
+          <Route path="/rdp-admin" element={<DashboardRoute portfolioProfile={portfolio?.profile ?? null} selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
+          <Route path="/rdp-admin/:view" element={<DashboardRoute portfolioProfile={portfolio?.profile ?? null} selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
+          <Route path="/rdp-admin/:view/:section" element={<DashboardRoute portfolioProfile={portfolio?.profile ?? null} selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
+          <Route path="/dashboard-login" element={<DashboardRoute portfolioProfile={portfolio?.profile ?? null} selectedTheme={themePreference} onSelectTheme={setThemePreference} />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

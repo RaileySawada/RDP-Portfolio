@@ -1,17 +1,19 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import { AdminDashboard } from "../components/admin/AdminDashboard";
+import type { Profile } from "../data/portfolio";
 import type { ThemePreference } from "../hooks/useTheme";
 import { getStoredAdminSession, loginAdmin, storeAdminSession, type AdminSession } from "../services/adminAuth";
 
 const maxLoginAttempts = 5;
 
 type DashboardRouteProps = {
+  portfolioProfile: Profile | null;
   selectedTheme: ThemePreference;
   onSelectTheme: (theme: ThemePreference, originElement: HTMLElement) => void;
 };
 
-export function DashboardRoute({ selectedTheme, onSelectTheme }: DashboardRouteProps) {
+export function DashboardRoute({ portfolioProfile, selectedTheme, onSelectTheme }: DashboardRouteProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -71,7 +73,7 @@ export function DashboardRoute({ selectedTheme, onSelectTheme }: DashboardRouteP
   };
 
   if (session) {
-    return <AdminDashboard session={session} selectedTheme={selectedTheme} onSelectTheme={onSelectTheme} onLogout={() => setSession(null)} />;
+    return <AdminDashboard portfolioProfile={portfolioProfile} session={session} selectedTheme={selectedTheme} onSelectTheme={onSelectTheme} onLogout={() => setSession(null)} />;
   }
 
   if (isAdminPath) {
