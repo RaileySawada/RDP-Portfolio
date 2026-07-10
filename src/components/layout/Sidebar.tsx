@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { Avatar, Style } from "@dicebear/core";
+import personas from "@dicebear/styles/personas.json";
 import { Link, NavLink } from "react-router";
 import type { Profile } from "../../data/portfolio";
 import type { ThemePreference } from "../../hooks/useTheme";
@@ -26,6 +28,9 @@ const navIcons: Record<
   "/certifications": SealIcon,
   "/about": UserIcon,
 };
+
+const viewerAvatarStyle = new Style(personas);
+const viewerAvatarSeeds = ["RDP viewer 1", "RDP viewer 2", "RDP viewer 3"];
 
 type SidebarProps = {
   navItems: NavItem[];
@@ -193,34 +198,17 @@ function ViewerCount({
 }
 
 function ViewerAvatar({ variant }: { variant: number }) {
-  const hairPaths = [
-    "M4.3 11.9C4.8 6.8 8 4.2 12 4.2c4.4 0 7.2 3.1 7.4 7.6-1.6-.8-3.4-2.3-4.5-4-2.4 2.5-6 3.7-10.6 4.1Z",
-    "M4.4 12c.6-5 3.8-7.8 7.6-7.8 4.2 0 7 2.9 7.5 7.3-2.9-.9-5.1-.6-7.6.2-2.5.9-4.9 1-7.5.3Z",
-    "M4.5 11.8c.7-4.8 3.6-7.4 7.5-7.4 4.1 0 6.8 2.9 7.2 7.6-1.9-1.9-4.3-2.8-7-2.8-3 0-5.6.8-7.7 2.6Z",
-  ];
-  const nosePaths = [
-    "M12.2 13.2l-.5 2 1.1.1",
-    "M11.8 13.2l.5 2.1-1 .1",
-    "M12 13.1v2.2",
-  ];
-  const mouthPaths = [
-    "M9.4 16.8c1.5 1.1 3.7 1.1 5.2 0",
-    "M9.8 16.9c1.2.7 3.2.7 4.4 0",
-    "M9.7 16.7c1.4 1 3.2 1 4.6 0",
-  ];
+  const avatar = new Avatar(viewerAvatarStyle, {
+    seed: viewerAvatarSeeds[variant] ?? viewerAvatarSeeds[0],
+    size: 28,
+    backgroundColor: "ffffff",
+    clothingColor: "171717",
+    facialHairColor: "171717",
+    hairColor: "171717",
+    skinColor: "ffffff",
+  });
 
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path className="viewer-avatar-shirt" d="M6 22c1-3.1 3-4.6 6-4.6s5 1.5 6 4.6" />
-      <path className="viewer-avatar-neck" d="M9.8 17.7h4.4v2.7H9.8z" />
-      <path className="viewer-avatar-ear" d="M4.7 12.5c-1 .2-1.4 2.1-.2 2.7M19.3 12.5c1 .2 1.4 2.1.2 2.7" />
-      <circle className="viewer-avatar-face" cx="12" cy="12.3" r="7.7" />
-      <path className="viewer-avatar-hair" d={hairPaths[variant]} />
-      <path className="viewer-avatar-brow" d="M8.3 11.5h2M13.7 11.5h2" />
-      <circle className="viewer-avatar-eye" cx="9.4" cy="12.9" r="0.8" />
-      <circle className="viewer-avatar-eye" cx="14.6" cy="12.9" r="0.8" />
-      <path className="viewer-avatar-nose" d={nosePaths[variant]} />
-      <path className="viewer-avatar-mouth" d={mouthPaths[variant]} />
-    </svg>
+    <img className="viewer-avatar-image" src={avatar.toDataUri()} alt="" aria-hidden="true" />
   );
 }

@@ -155,48 +155,11 @@ body {
   mix-blend-mode: normal;
 }
 
-.viewer-avatar svg {
+.viewer-avatar-image {
+  display: block;
   width: 28px;
   height: 28px;
-  overflow: visible;
-}
-
-.viewer-avatar-face {
-  fill: rgb(250 250 250);
-  stroke: currentColor;
-  stroke-width: 1.05;
-}
-
-.viewer-avatar-hair,
-.viewer-avatar-eye {
-  fill: currentColor;
-}
-
-.viewer-avatar-neck {
-  fill: rgb(250 250 250);
-  stroke: currentColor;
-  stroke-width: 1;
-}
-
-.viewer-avatar-ear,
-.viewer-avatar-brow,
-.viewer-avatar-nose,
-.viewer-avatar-mouth,
-.viewer-avatar-shirt {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.1;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.viewer-avatar-brow {
-  stroke-width: 1.35;
-}
-
-.dark .viewer-avatar-face,
-.dark .viewer-avatar-neck {
-  fill: rgb(23 23 23);
+  border-radius: 999px;
 }
 
 ::view-transition-old(root) {
