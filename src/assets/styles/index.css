@@ -3806,15 +3806,13 @@ body {
     grid-auto-flow: column;
     grid-template-columns: none;
     gap: 14px;
+    background: transparent;
     overflow-x: auto;
-    overflow-y: clip;
+    overflow-y: hidden;
     padding: 2px 48px 10px;
     scroll-padding-inline: 48px;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    mask-image: linear-gradient(90deg, transparent, black 42px, black calc(100% - 42px), transparent);
-    -webkit-mask-image: linear-gradient(90deg, transparent, black 42px, black calc(100% - 42px), transparent);
   }
 
   .home-carousel-item {

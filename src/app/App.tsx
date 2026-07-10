@@ -21,6 +21,8 @@ const navItems: NavItem[] = [
   { label: "About", path: "/about" },
 ];
 
+const publicContentPaths = new Set(["/", "/projects", "/stack", "/certifications", "/about"]);
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -40,11 +42,13 @@ function PortfolioApp() {
     location.pathname === "/rdp-login" ||
     location.pathname === "/dashboard-login" ||
     location.pathname.startsWith("/rdp-admin");
+  const normalizedPath = location.pathname === "/" ? "/" : location.pathname.replace(/\/+$/, "");
+  const showSidebar = !isAdminRoute && Boolean(portfolio) && publicContentPaths.has(normalizedPath);
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 transition-colors duration-200 dark:bg-neutral-950 dark:text-neutral-100">
       <ScrollToTop />
-      {!isAdminRoute && portfolio ? (
+      {showSidebar ? (
         <button
           className="fixed left-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-md border border-neutral-200 bg-white/90 text-neutral-800 shadow-sm backdrop-blur transition hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-neutral-950 dark:border-neutral-800 dark:bg-neutral-950/90 dark:text-neutral-100 dark:hover:bg-neutral-900 dark:focus-visible:outline-white lg:hidden"
           type="button"
@@ -55,7 +59,7 @@ function PortfolioApp() {
         </button>
       ) : null}
 
-      {!isAdminRoute && portfolio ? (
+      {showSidebar && portfolio ? (
         <Sidebar
           navItems={navItems}
           profile={portfolio.profile}
@@ -68,7 +72,7 @@ function PortfolioApp() {
         />
       ) : null}
 
-      <main className={isAdminRoute ? "" : "lg:ml-72"}>
+      <main className={showSidebar ? "lg:ml-72" : ""}>
         <Routes>
           <Route
             path="/"
