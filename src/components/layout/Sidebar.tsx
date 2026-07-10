@@ -1,6 +1,5 @@
 import { useEffect } from "react";
-import { Avatar, Style } from "@dicebear/core";
-import personas from "@dicebear/styles/personas.json";
+import Avatar from "boring-avatars";
 import { Link, NavLink } from "react-router";
 import type { Profile } from "../../data/portfolio";
 import type { ThemePreference } from "../../hooks/useTheme";
@@ -29,8 +28,8 @@ const navIcons: Record<
   "/about": UserIcon,
 };
 
-const viewerAvatarStyle = new Style(personas);
 const viewerAvatarSeeds = ["RDP viewer 1", "RDP viewer 2", "RDP viewer 3"];
+const viewerAvatarColors = ["#0a0a0a", "#525252", "#d4d4d4", "#f5f5f5", "#ffffff"];
 
 type SidebarProps = {
   navItems: NavItem[];
@@ -198,17 +197,14 @@ function ViewerCount({
 }
 
 function ViewerAvatar({ variant }: { variant: number }) {
-  const avatar = new Avatar(viewerAvatarStyle, {
-    seed: viewerAvatarSeeds[variant] ?? viewerAvatarSeeds[0],
-    size: 28,
-    backgroundColor: "ffffff",
-    clothingColor: "171717",
-    facialHairColor: "171717",
-    hairColor: "171717",
-    skinColor: "ffffff",
-  });
-
   return (
-    <img className="viewer-avatar-image" src={avatar.toDataUri()} alt="" aria-hidden="true" />
+    <Avatar
+      className="viewer-avatar-image"
+      name={viewerAvatarSeeds[variant] ?? viewerAvatarSeeds[0]}
+      variant="beam"
+      colors={viewerAvatarColors}
+      size={28}
+      aria-hidden="true"
+    />
   );
 }
