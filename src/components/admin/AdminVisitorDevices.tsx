@@ -6,7 +6,14 @@ type AdminVisitorDevicesProps = {
   isLoading: boolean;
 };
 
-type SortKey = "browser" | "location" | "screen" | "network" | "firstSeen" | "lastSeen" | "isActive";
+type SortKey =
+  | "browser"
+  | "location"
+  | "screen"
+  | "network"
+  | "firstSeen"
+  | "lastSeen"
+  | "isActive";
 type SortDirection = "ascending" | "descending";
 
 const columns: { key: SortKey; label: string }[] = [
@@ -19,6 +26,8 @@ const columns: { key: SortKey; label: string }[] = [
   { key: "isActive", label: "Status" },
 ];
 
+const devicesPerPage = 10;
+
 function formatDate(timestamp: number) {
   if (!timestamp) {
     return "Unknown";
@@ -30,25 +39,35 @@ function formatDate(timestamp: number) {
   }).format(new Date(timestamp));
 }
 
-export function AdminVisitorDevices({ devices, isLoading }: AdminVisitorDevicesProps) {
+export function AdminVisitorDevices({
+  devices,
+  isLoading,
+}: AdminVisitorDevicesProps) {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("lastSeen");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("descending");
+  const [sortDirection, setSortDirection] =
+    useState<SortDirection>("descending");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const visibleDevices = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const matchingDevices = normalizedQuery ? devices.filter((device) => {
-      return [
-        device.browser,
-        device.platform,
-        device.location,
-        device.ipAddress,
-        device.screen,
-        device.network,
-        device.language,
-        device.timezone,
-      ].join(" ").toLowerCase().includes(normalizedQuery);
-    }) : devices;
+    const matchingDevices = normalizedQuery
+      ? devices.filter((device) => {
+          return [
+            device.browser,
+            device.platform,
+            device.location,
+            device.ipAddress,
+            device.screen,
+            device.network,
+            device.language,
+            device.timezone,
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(normalizedQuery);
+        })
+      : devices;
 
     return [...matchingDevices].sort((first, second) => {
       const firstValue = first[sortKey];
@@ -56,8 +75,13 @@ export function AdminVisitorDevices({ devices, isLoading }: AdminVisitorDevicesP
       let comparison: number;
 
       if (typeof firstValue === "string" && typeof secondValue === "string") {
-        comparison = firstValue.localeCompare(secondValue, undefined, { sensitivity: "base" });
-      } else if (typeof firstValue === "boolean" && typeof secondValue === "boolean") {
+        comparison = firstValue.localeCompare(secondValue, undefined, {
+          sensitivity: "base",
+        });
+      } else if (
+        typeof firstValue === "boolean" &&
+        typeof secondValue === "boolean"
+      ) {
         comparison = Number(firstValue) - Number(secondValue);
       } else {
         comparison = Number(firstValue) - Number(secondValue);
@@ -67,25 +91,52 @@ export function AdminVisitorDevices({ devices, isLoading }: AdminVisitorDevicesP
     });
   }, [devices, query, sortDirection, sortKey]);
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(visibleDevices.length / devicesPerPage),
+  );
+  const activePage = Math.min(currentPage, totalPages);
+  const firstDeviceIndex = (activePage - 1) * devicesPerPage;
+  const paginatedDevices = visibleDevices.slice(
+    firstDeviceIndex,
+    firstDeviceIndex + devicesPerPage,
+  );
+  const lastDeviceIndex = Math.min(
+    firstDeviceIndex + devicesPerPage,
+    visibleDevices.length,
+  );
+
   const changeSort = (nextKey: SortKey) => {
+    setCurrentPage(1);
+
     if (nextKey === sortKey) {
-      setSortDirection((current) => current === "ascending" ? "descending" : "ascending");
+      setSortDirection((current) =>
+        current === "ascending" ? "descending" : "ascending",
+      );
       return;
     }
 
     setSortKey(nextKey);
-    setSortDirection(nextKey === "firstSeen" || nextKey === "lastSeen" ? "descending" : "ascending");
+    setSortDirection(
+      nextKey === "firstSeen" || nextKey === "lastSeen"
+        ? "descending"
+        : "ascending",
+    );
   };
 
   return (
     <div className="admin-devices-view mx-auto max-w-6xl">
       <header className="admin-dashboard-header">
         <div>
-          <p className="metadata text-neutral-500 dark:text-neutral-500">Viewers</p>
+          <p className="metadata text-neutral-500 dark:text-neutral-500">
+            Viewers
+          </p>
           <h1>Visitor Devices</h1>
         </div>
         <span className={`admin-device-count ${isLoading ? "is-loading" : ""}`}>
-          {isLoading ? "Loading devices" : `${devices.length.toLocaleString()} devices`}
+          {isLoading
+            ? "Loading devices"
+            : `${devices.length.toLocaleString()} devices`}
         </span>
       </header>
 
@@ -104,7 +155,10 @@ export function AdminVisitorDevices({ devices, isLoading }: AdminVisitorDevicesP
                 type="search"
                 placeholder="Search devices..."
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setCurrentPage(1);
+                }}
               />
             </label>
           </div>
@@ -114,11 +168,27 @@ export function AdminVisitorDevices({ devices, isLoading }: AdminVisitorDevicesP
               <thead>
                 <tr>
                   {columns.map((column) => (
-                    <th key={column.key} aria-sort={sortKey === column.key ? sortDirection : "none"}>
-                      <button type="button" className="admin-sort-button" onClick={() => changeSort(column.key)}>
+                    <th
+                      key={column.key}
+                      aria-sort={
+                        sortKey === column.key ? sortDirection : "none"
+                      }
+                    >
+                      <button
+                        type="button"
+                        className="admin-sort-button"
+                        onClick={() => changeSort(column.key)}
+                      >
                         <span>{column.label}</span>
-                        <span className="admin-sort-indicator" aria-hidden="true">
-                          {sortKey === column.key ? (sortDirection === "ascending" ? "↑" : "↓") : "↕"}
+                        <span
+                          className="admin-sort-indicator"
+                          aria-hidden="true"
+                        >
+                          {sortKey === column.key
+                            ? sortDirection === "ascending"
+                              ? "↑"
+                              : "↓"
+                            : "↕"}
                         </span>
                       </button>
                     </th>
@@ -126,30 +196,40 @@ export function AdminVisitorDevices({ devices, isLoading }: AdminVisitorDevicesP
                 </tr>
               </thead>
               <tbody>
-                {visibleDevices.length > 0 ? visibleDevices.map((device) => (
-                  <tr key={device.id}>
-                    <td>
-                      <strong>{device.browser}</strong>
-                      <small>{device.platform} · {device.language}</small>
-                    </td>
-                    <td>
-                      <strong>{device.location}</strong>
-                      <small>{device.ipAddress} · {device.timezone}</small>
-                    </td>
-                    <td>{device.screen}</td>
-                    <td>{device.network.toUpperCase()}</td>
-                    <td>{formatDate(device.firstSeen)}</td>
-                    <td>{formatDate(device.lastSeen)}</td>
-                    <td>
-                      <span className={`admin-device-status ${device.isActive ? "is-active" : ""}`}>
-                        <i aria-hidden="true" />
-                        {device.isActive ? "Active" : "Offline"}
-                      </span>
-                    </td>
-                  </tr>
-                )) : (
+                {paginatedDevices.length > 0 ? (
+                  paginatedDevices.map((device) => (
+                    <tr key={device.id}>
+                      <td>
+                        <strong>{device.browser}</strong>
+                        <small>
+                          {device.platform} · {device.language}
+                        </small>
+                      </td>
+                      <td>
+                        <strong>{device.location}</strong>
+                        <small>
+                          {device.ipAddress} · {device.timezone}
+                        </small>
+                      </td>
+                      <td>{device.screen}</td>
+                      <td>{device.network.toUpperCase()}</td>
+                      <td>{formatDate(device.firstSeen)}</td>
+                      <td>{formatDate(device.lastSeen)}</td>
+                      <td>
+                        <span
+                          className={`admin-device-status ${device.isActive ? "is-active" : ""}`}
+                        >
+                          <i aria-hidden="true" />
+                          {device.isActive ? "Active" : "Offline"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
-                    <td colSpan={7}>No visitor devices found.</td>
+                    <td colSpan={7} className="text-center">
+                      No visitor devices found.
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -157,8 +237,35 @@ export function AdminVisitorDevices({ devices, isLoading }: AdminVisitorDevicesP
           </div>
 
           <div className="admin-activity-footer">
-            <span>{visibleDevices.length} of {devices.length}</span>
-            <span>List mode</span>
+            <span>
+              {visibleDevices.length > 0
+                ? `Showing ${firstDeviceIndex + 1}-${lastDeviceIndex} of ${visibleDevices.length}`
+                : "Showing 0 devices"}
+            </span>
+            {visibleDevices.length > devicesPerPage ? (
+              <nav
+                className="admin-pagination"
+                aria-label="Visitor device pages"
+              >
+                <button
+                  type="button"
+                  disabled={activePage === 1}
+                  onClick={() => setCurrentPage(activePage - 1)}
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {activePage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={activePage === totalPages}
+                  onClick={() => setCurrentPage(activePage + 1)}
+                >
+                  Next
+                </button>
+              </nav>
+            ) : null}
           </div>
         </div>
       )}
@@ -168,7 +275,11 @@ export function AdminVisitorDevices({ devices, isLoading }: AdminVisitorDevicesP
 
 function AdminDeviceTableSkeleton() {
   return (
-    <div className="admin-activity-table admin-device-table admin-device-skeleton" role="status" aria-busy="true">
+    <div
+      className="admin-activity-table admin-device-table admin-device-skeleton"
+      role="status"
+      aria-busy="true"
+    >
       <span className="sr-only">Loading visitor devices</span>
       <div className="admin-activity-header" aria-hidden="true">
         <div>
@@ -182,19 +293,35 @@ function AdminDeviceTableSkeleton() {
         <table>
           <thead>
             <tr>
-              {columns.map((column) => <th key={column.key}>{column.label}</th>)}
+              {columns.map((column) => (
+                <th key={column.key}>{column.label}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: 5 }, (_, rowIndex) => (
               <tr key={rowIndex}>
-                <td><SkeletonLines secondary /></td>
-                <td><SkeletonLines secondary /></td>
-                <td><SkeletonLines /></td>
-                <td><SkeletonLines short /></td>
-                <td><SkeletonLines /></td>
-                <td><SkeletonLines /></td>
-                <td><SkeletonLines short /></td>
+                <td>
+                  <SkeletonLines secondary />
+                </td>
+                <td>
+                  <SkeletonLines secondary />
+                </td>
+                <td>
+                  <SkeletonLines />
+                </td>
+                <td>
+                  <SkeletonLines short />
+                </td>
+                <td>
+                  <SkeletonLines />
+                </td>
+                <td>
+                  <SkeletonLines />
+                </td>
+                <td>
+                  <SkeletonLines short />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -209,11 +336,19 @@ function AdminDeviceTableSkeleton() {
   );
 }
 
-function SkeletonLines({ secondary = false, short = false }: { secondary?: boolean; short?: boolean }) {
+function SkeletonLines({
+  secondary = false,
+  short = false,
+}: {
+  secondary?: boolean;
+  short?: boolean;
+}) {
   return (
     <span className={`admin-device-skeleton-lines ${short ? "is-short" : ""}`}>
       <span className="admin-device-skeleton-line" />
-      {secondary ? <span className="admin-device-skeleton-line is-secondary" /> : null}
+      {secondary ? (
+        <span className="admin-device-skeleton-line is-secondary" />
+      ) : null}
     </span>
   );
 }

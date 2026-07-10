@@ -1655,6 +1655,54 @@ th[aria-sort="descending"] .admin-sort-indicator {
   color: rgb(163 163 163);
 }
 
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-pagination button {
+  min-height: 32px;
+  border-radius: 7px;
+  border: 1px solid rgb(212 212 212);
+  background: rgb(255 255 255);
+  padding: 0 11px;
+  color: rgb(38 38 38);
+  font-size: 12px;
+  font-weight: 700;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.admin-pagination button:hover:not(:disabled) {
+  border-color: rgb(115 115 115);
+  background: rgb(245 245 245);
+}
+
+.admin-pagination button:focus-visible {
+  outline: 2px solid rgb(10 10 10);
+  outline-offset: 2px;
+}
+
+.admin-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.dark .admin-pagination button {
+  border-color: rgb(64 64 64);
+  background: rgb(18 18 18);
+  color: rgb(229 229 229);
+}
+
+.dark .admin-pagination button:hover:not(:disabled) {
+  border-color: rgb(115 115 115);
+  background: rgb(38 38 38);
+}
+
+.dark .admin-pagination button:focus-visible {
+  outline-color: rgb(255 255 255);
+}
+
 .admin-device-count {
   border-radius: 999px;
   border: 1px solid rgb(229 229 229);
@@ -1817,6 +1865,16 @@ th[aria-sort="descending"] .admin-sort-indicator {
   }
 
   .admin-activity-header label {
+    width: 100%;
+  }
+
+  .admin-activity-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-pagination {
+    justify-content: space-between;
     width: 100%;
   }
 }
