@@ -4,15 +4,16 @@ import { DataState } from "../ui/DataState";
 
 type ViewerLineChartProps = {
   data: ViewerPoint[];
+  totalViewers: number;
 };
 
 type ChartPoint = {
   x: number;
   newY: number;
-  returningY: number;
+  cumulativeY: number;
   label: string;
   viewers: number;
-  returning: number;
+  cumulative: number;
 };
 
 const width = 760;
@@ -44,32 +45,36 @@ function getNiceMaximum(value: number) {
   return Math.ceil(value / magnitude) * magnitude;
 }
 
-export function ViewerLineChart({ data }: ViewerLineChartProps) {
+export function ViewerLineChart({ data, totalViewers }: ViewerLineChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const chart = useMemo(() => {
     const innerWidth = width - padding.left - padding.right;
     const innerHeight = height - padding.top - padding.bottom;
-    const rawMaximum = Math.max(0, ...data.flatMap((point) => [point.viewers, point.returning]));
+    const totalNew = data.reduce((total, point) => total + point.viewers, 0);
+    const startingTotal = Math.max(totalViewers - totalNew, 0);
+    const cumulativeValues = data.reduce<number[]>((values, point, index) => {
+      values.push((values[index - 1] ?? startingTotal) + point.viewers);
+      return values;
+    }, []);
+    const rawMaximum = Math.max(0, ...data.map((point) => point.viewers), ...cumulativeValues);
     const maxValue = getNiceMaximum(rawMaximum);
     const xStep = data.length > 1 ? innerWidth / (data.length - 1) : innerWidth;
     const toY = (value: number) => padding.top + innerHeight - (value / maxValue) * innerHeight;
     const points: ChartPoint[] = data.map((point, index) => ({
       x: padding.left + index * xStep,
       newY: toY(point.viewers),
-      returningY: toY(point.returning),
+      cumulativeY: toY(cumulativeValues[index] || 0),
       label: point.label,
       viewers: point.viewers,
-      returning: point.returning,
+      cumulative: cumulativeValues[index] || 0,
     }));
-    const totalNew = data.reduce((total, point) => total + point.viewers, 0);
-    const totalReturning = data.reduce((total, point) => total + point.returning, 0);
     const peak = data.reduce<ViewerPoint | null>((current, point) => {
-      if (!current || point.viewers + point.returning > current.viewers + current.returning) return point;
+      if (!current || point.viewers > current.viewers) return point;
       return current;
     }, null);
 
-    return { points, maxValue, totalNew, totalReturning, peak };
-  }, [data]);
+    return { points, maxValue, totalNew, cumulativeTotal: cumulativeValues.at(-1) || 0, peak };
+  }, [data, totalViewers]);
 
   if (data.length === 0) {
     return <DataState type="empty" label="No viewer data yet" description="Viewer activity will appear here once visits are recorded." />;
@@ -82,14 +87,14 @@ export function ViewerLineChart({ data }: ViewerLineChartProps) {
   return (
     <div className="viewer-line-chart">
       <div className="chart-summary" aria-label="Viewer period summary">
-        <span><small>New viewers</small><strong>{chart.totalNew.toLocaleString()}</strong></span>
-        <span><small>Returning</small><strong>{chart.totalReturning.toLocaleString()}</strong></span>
+        <span><small>New users</small><strong>{chart.totalNew.toLocaleString()}</strong></span>
+        <span><small>Cumulative</small><strong>{chart.cumulativeTotal.toLocaleString()}</strong></span>
         <span><small>Peak day</small><strong>{chart.peak?.label || "-"}</strong></span>
       </div>
 
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Daily new and returning viewer line graph">
         <defs>
-          <linearGradient id="viewerNewFill" x1="0" x2="0" y1="0" y2="1">
+          <linearGradient id="viewerCumulativeFill" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="currentColor" stopOpacity="0.14" />
             <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </linearGradient>
@@ -106,9 +111,9 @@ export function ViewerLineChart({ data }: ViewerLineChartProps) {
           );
         })}
 
-        <path className="chart-area chart-area-upper" d={getAreaPath(chart.points.map((point) => ({ x: point.x, y: point.newY })), baseline)} />
+        <path className="chart-area chart-area-upper" d={getAreaPath(chart.points.map((point) => ({ x: point.x, y: point.cumulativeY })), baseline)} />
         <path className="chart-line chart-line-viewers" d={getSmoothPath(chart.points.map((point) => ({ x: point.x, y: point.newY })))} />
-        <path className="chart-line chart-line-returning" d={getSmoothPath(chart.points.map((point) => ({ x: point.x, y: point.returningY })))} />
+        <path className="chart-line chart-line-cumulative" d={getSmoothPath(chart.points.map((point) => ({ x: point.x, y: point.cumulativeY })))} />
 
         {active ? <line className="chart-active-line" x1={active.x} x2={active.x} y1={padding.top} y2={baseline} /> : null}
 
@@ -117,7 +122,7 @@ export function ViewerLineChart({ data }: ViewerLineChartProps) {
             className="chart-hit"
             role="button"
             tabIndex={0}
-            aria-label={`${point.label}: ${point.viewers} new and ${point.returning} returning viewers`}
+            aria-label={`${point.label}: ${point.viewers} new and ${point.cumulative} cumulative users`}
             key={`${point.label}-${index}`}
             onFocus={() => setActiveIndex(index)}
             onBlur={() => setActiveIndex(null)}
@@ -127,7 +132,7 @@ export function ViewerLineChart({ data }: ViewerLineChartProps) {
           >
             <rect x={point.x - Math.max((width - padding.left - padding.right) / data.length / 2, 12)} y={padding.top} width={Math.max((width - padding.left - padding.right) / data.length, 24)} height={baseline - padding.top} fill="transparent" />
             <circle className="chart-marker-upper" cx={point.x} cy={point.newY} r={index === activeIndex ? 5.5 : 3.5} />
-            <circle className="chart-marker-lower" cx={point.x} cy={point.returningY} r={index === activeIndex ? 5 : 3} />
+            <circle className="chart-marker-cumulative" cx={point.x} cy={point.cumulativeY} r={index === activeIndex ? 5 : 3} />
           </g>
         ))}
 
@@ -140,17 +145,17 @@ export function ViewerLineChart({ data }: ViewerLineChartProps) {
           <g className="chart-tooltip" transform={`translate(${Math.min(Math.max(active.x - 88, padding.left + 4), width - 196)} ${padding.top + 10})`}>
             <rect width="176" height="86" rx="8" />
             <text className="chart-tooltip-title" x="14" y="23">{active.label}</text>
-            <text x="14" y="46">New viewers</text>
+            <text x="14" y="46">New users</text>
             <text className="chart-tooltip-value" x="150" y="46">{active.viewers}</text>
-            <text x="14" y="68">Returning</text>
-            <text className="chart-tooltip-value" x="150" y="68">{active.returning}</text>
+            <text x="14" y="68">Cumulative</text>
+            <text className="chart-tooltip-value" x="150" y="68">{active.cumulative}</text>
           </g>
         ) : null}
       </svg>
 
       <div className="chart-legend">
-        <span><i className="is-viewers" />New viewers</span>
-        <span><i className="is-returning" />Returning</span>
+        <span><i className="is-viewers" />New users</span>
+        <span><i className="is-cumulative" />Cumulative users</span>
       </div>
     </div>
   );

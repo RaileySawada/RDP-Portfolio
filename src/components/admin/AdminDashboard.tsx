@@ -137,13 +137,13 @@ function AdminAnalyticsView({ analytics, isLoading }: { analytics: AdminAnalytic
               <p className="metadata text-neutral-500 dark:text-neutral-500">Last 14 Days</p>
               <h2>Viewer Graph</h2>
             </div>
-            <span>New vs returning</span>
+            <span>New vs cumulative</span>
           </div>
           {isLoading ? (
             <DataState type="loading" label="Loading viewer activity" />
           ) : (
             <>
-              <ViewerLineChart data={analytics.viewerSeries} />
+              <ViewerLineChart data={analytics.viewerSeries} totalViewers={analytics.totalViewers} />
               <AdminActivityTable events={analytics.activityEvents} />
             </>
           )}
