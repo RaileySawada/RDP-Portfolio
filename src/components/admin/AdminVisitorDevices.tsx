@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import type { AdminVisitorDevice } from "../../services/adminAnalytics";
-import { DataState } from "../ui/DataState";
 
 type AdminVisitorDevicesProps = {
   devices: AdminVisitorDevice[];
@@ -85,13 +84,13 @@ export function AdminVisitorDevices({ devices, isLoading }: AdminVisitorDevicesP
           <p className="metadata text-neutral-500 dark:text-neutral-500">Viewers</p>
           <h1>Visitor Devices</h1>
         </div>
-        <span className="admin-device-count">{devices.length.toLocaleString()} devices</span>
+        <span className={`admin-device-count ${isLoading ? "is-loading" : ""}`}>
+          {isLoading ? "Loading devices" : `${devices.length.toLocaleString()} devices`}
+        </span>
       </header>
 
       {isLoading ? (
-        <div className="admin-chart-panel">
-          <DataState type="loading" label="Loading visitor devices" />
-        </div>
+        <AdminDeviceTableSkeleton />
       ) : (
         <div className="admin-activity-table admin-device-table">
           <div className="admin-activity-header">
@@ -164,5 +163,57 @@ export function AdminVisitorDevices({ devices, isLoading }: AdminVisitorDevicesP
         </div>
       )}
     </div>
+  );
+}
+
+function AdminDeviceTableSkeleton() {
+  return (
+    <div className="admin-activity-table admin-device-table admin-device-skeleton" role="status" aria-busy="true">
+      <span className="sr-only">Loading visitor devices</span>
+      <div className="admin-activity-header" aria-hidden="true">
+        <div>
+          <h3>All devices</h3>
+          <p>Preparing the latest visitor details...</p>
+        </div>
+        <span className="admin-device-skeleton-search" />
+      </div>
+
+      <div className="admin-activity-scroll" aria-hidden="true">
+        <table>
+          <thead>
+            <tr>
+              {columns.map((column) => <th key={column.key}>{column.label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 5 }, (_, rowIndex) => (
+              <tr key={rowIndex}>
+                <td><SkeletonLines secondary /></td>
+                <td><SkeletonLines secondary /></td>
+                <td><SkeletonLines /></td>
+                <td><SkeletonLines short /></td>
+                <td><SkeletonLines /></td>
+                <td><SkeletonLines /></td>
+                <td><SkeletonLines short /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="admin-activity-footer" aria-hidden="true">
+        <span className="admin-device-skeleton-line is-footer" />
+        <span className="admin-device-skeleton-line is-footer is-short" />
+      </div>
+    </div>
+  );
+}
+
+function SkeletonLines({ secondary = false, short = false }: { secondary?: boolean; short?: boolean }) {
+  return (
+    <span className={`admin-device-skeleton-lines ${short ? "is-short" : ""}`}>
+      <span className="admin-device-skeleton-line" />
+      {secondary ? <span className="admin-device-skeleton-line is-secondary" /> : null}
+    </span>
   );
 }

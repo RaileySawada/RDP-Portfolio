@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { Profile } from "../../data/portfolio";
+import { useCountUp } from "../../hooks/useCountUp";
 import type { ThemePreference } from "../../hooks/useTheme";
 import { clearAdminSession, type AdminSession } from "../../services/adminAuth";
 import { fetchAdminAnalytics, fallbackAnalytics, type AdminAnalytics } from "../../services/adminAnalytics";
@@ -106,6 +107,11 @@ export function AdminDashboard({ portfolioProfile, session, selectedTheme, onSel
 }
 
 function AdminAnalyticsView({ analytics, isLoading }: { analytics: AdminAnalytics; isLoading: boolean }) {
+  const animatedTotalViewers = useCountUp(analytics.totalViewers, !isLoading);
+  const animatedActiveViewers = useCountUp(analytics.activeViewers, !isLoading);
+  const animatedTodayViewers = useCountUp(analytics.todayViewers, !isLoading);
+  const animatedDailyAverage = useCountUp(analytics.averageDailyViewers, !isLoading);
+
   return (
     <div className="admin-analytics mx-auto max-w-6xl">
       <span className="admin-decor-dot admin-decor-dot-a" aria-hidden="true" />
@@ -125,13 +131,13 @@ function AdminAnalyticsView({ analytics, isLoading }: { analytics: AdminAnalytic
         <div className="admin-overview-main">
           <span className="admin-overview-mask" aria-hidden="true" />
           <p>Total viewers</p>
-          <strong>{analytics.totalViewers.toLocaleString()}</strong>
-          <span>Updated {analytics.lastUpdatedAt ? new Date(analytics.lastUpdatedAt).toLocaleTimeString() : "just now"}</span>
+          <strong>{animatedTotalViewers.toLocaleString()}</strong>
+          <span>{isLoading ? "Waiting for live data" : `Updated ${analytics.lastUpdatedAt ? new Date(analytics.lastUpdatedAt).toLocaleTimeString() : "just now"}`}</span>
         </div>
         <div className="admin-metrics">
-          <AdminMetric label="Active now" value={analytics.activeViewers.toLocaleString()} />
-          <AdminMetric label="Today" value={analytics.todayViewers.toLocaleString()} />
-          <AdminMetric label="Daily avg" value={analytics.averageDailyViewers.toLocaleString()} />
+          <AdminMetric label="Active now" value={animatedActiveViewers} />
+          <AdminMetric label="Today" value={animatedTodayViewers} />
+          <AdminMetric label="Daily avg" value={animatedDailyAverage} />
         </div>
       </div>
 
@@ -209,11 +215,11 @@ function AdminAccountView({ adminProfile, portfolioProfile }: { adminProfile: Ad
   );
 }
 
-function AdminMetric({ label, value }: { label: string; value: string }) {
+function AdminMetric({ label, value }: { label: string; value: number }) {
   return (
     <article className="admin-metric">
       <p>{label}</p>
-      <strong>{value}</strong>
+      <strong>{value.toLocaleString()}</strong>
     </article>
   );
 }
