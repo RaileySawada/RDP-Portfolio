@@ -5,6 +5,7 @@ import type { ThemePreference } from "../../hooks/useTheme";
 import { clearAdminSession, type AdminSession } from "../../services/adminAuth";
 import { fetchAdminAnalytics, fallbackAnalytics, type AdminAnalytics } from "../../services/adminAnalytics";
 import { MenuIcon } from "../ui/Icons";
+import { DataState } from "../ui/DataState";
 import { AdminActivityTable } from "./AdminActivityTable";
 import { AdminContentEditor } from "./AdminContentEditor";
 import { AdminSidebar, type AdminView } from "./AdminSidebar";
@@ -110,7 +111,7 @@ function AdminAnalyticsView({ analytics, isLoading }: { analytics: AdminAnalytic
           <h1>Viewer Analytics</h1>
         </div>
         <span className={`admin-status-pill ${isLoading ? "" : "is-live"}`}>
-          <i aria-hidden="true" />
+          {isLoading ? <span className="admin-status-spinner" aria-hidden="true" /> : <i aria-hidden="true" />}
           {isLoading ? "Syncing" : "Live"}
         </span>
       </header>
@@ -138,8 +139,14 @@ function AdminAnalyticsView({ analytics, isLoading }: { analytics: AdminAnalytic
             </div>
             <span>New vs returning</span>
           </div>
-          <ViewerLineChart data={analytics.viewerSeries} />
-          <AdminActivityTable events={analytics.activityEvents} />
+          {isLoading ? (
+            <DataState type="loading" label="Loading viewer activity" />
+          ) : (
+            <>
+              <ViewerLineChart data={analytics.viewerSeries} />
+              <AdminActivityTable events={analytics.activityEvents} />
+            </>
+          )}
         </article>
 
         <article className="admin-chart-panel">
@@ -149,7 +156,7 @@ function AdminAnalyticsView({ analytics, isLoading }: { analytics: AdminAnalytic
               <h2>Browser Share</h2>
             </div>
           </div>
-          <ViewerDonutChart slices={analytics.browserSlices} />
+          {isLoading ? <DataState type="loading" label="Loading browser data" /> : <ViewerDonutChart slices={analytics.browserSlices} />}
         </article>
 
         <article className="admin-chart-panel">
@@ -159,7 +166,7 @@ function AdminAnalyticsView({ analytics, isLoading }: { analytics: AdminAnalytic
               <h2>Connection Types</h2>
             </div>
           </div>
-          <ViewerDonutChart slices={analytics.networkSlices} />
+          {isLoading ? <DataState type="loading" label="Loading network data" /> : <ViewerDonutChart slices={analytics.networkSlices} />}
         </article>
       </div>
     </div>

@@ -243,6 +243,16 @@ export function AlertIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+export function EmptyStateIcon({ className = "h-6 w-6" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <ellipse cx="12" cy="5.5" rx="7.5" ry="3" />
+      <path d="M4.5 5.5v5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-5M4.5 10.5v5c0 1.7 3.4 3 7.5 3 1.1 0 2.1-.1 3-.3" strokeLinecap="round" />
+      <path d="m17 16 4 4m0-4-4 4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function SparkIcon({ className = "h-4 w-4" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

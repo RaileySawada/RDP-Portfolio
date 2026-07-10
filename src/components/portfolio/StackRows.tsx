@@ -15,9 +15,9 @@ export function StackRows({ portfolio }: StackRowsProps) {
   const stackRows = getTechnicalStackRows(portfolio);
 
   return (
-    <div className="stack-grid">
+    <div className="stack-list">
       {stackRows.map((group, index) => (
-        <StackCard category={group.category} items={group.items} key={group.category} index={index} />
+        <StackRow category={group.category} items={group.items} key={group.category} index={index} />
       ))}
     </div>
   );
@@ -44,14 +44,14 @@ function getCategoryIcon(category: string) {
   return GridIcon;
 }
 
-function StackCard({ category, items, index = 0 }: StackRowData & { index?: number }) {
+function StackRow({ category, items, index = 0 }: StackRowData & { index?: number }) {
   const { ref, isInView } = useInView<HTMLElement>();
   const CategoryIcon = getCategoryIcon(category);
 
   return (
-    <article className={`stack-card card home-reveal ${isInView ? "is-visible" : ""}`} style={{ transitionDelay: `${index * 80}ms` }} ref={ref}>
-      <div className="stack-card-head">
-        <span className="stack-card-icon" aria-hidden="true">
+    <article className={`stack-row home-reveal ${isInView ? "is-visible" : ""}`} style={{ transitionDelay: `${index * 60}ms` }} ref={ref}>
+      <div className="stack-row-head">
+        <span className="stack-row-icon" aria-hidden="true">
           <CategoryIcon className="h-5 w-5" />
         </span>
         <div>
@@ -61,13 +61,14 @@ function StackCard({ category, items, index = 0 }: StackRowData & { index?: numb
           </p>
         </div>
       </div>
-      <div className="stack-card-items">
+      <div className="stack-row-items">
         {items.map((item) => (
           <span className="tech-badge" key={item}>
             {item}
           </span>
         ))}
       </div>
+      <span className="stack-row-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
     </article>
   );
 }

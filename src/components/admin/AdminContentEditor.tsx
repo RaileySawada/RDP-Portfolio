@@ -5,6 +5,7 @@ import { emptyPortfolio } from "../../data/portfolio";
 import { getPortfolioData, normalizePortfolioData } from "../../services/portfolio";
 import { savePortfolioData } from "../../services/adminPortfolio";
 import type { AdminSession } from "../../services/adminAuth";
+import { DataState } from "../ui/DataState";
 import { PlusIcon, SocialIcon, TrashIcon } from "../ui/Icons";
 import { AdminProjectManager } from "./AdminProjectManager";
 import { AdminCertificationManager } from "./AdminCertificationManager";
@@ -424,7 +425,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
   if (isLoading) {
     return (
       <div className="admin-content-shell mx-auto max-w-6xl">
-        <p className="admin-editor-empty">Loading...</p>
+        <DataState type="loading" label="Loading portfolio data" />
       </div>
     );
   }
@@ -432,7 +433,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
   if (!hasPortfolioData) {
     return (
       <div className="admin-content-shell mx-auto max-w-6xl">
-        <p className="admin-editor-empty">No Data Found</p>
+        <DataState type="empty" label="No Data Found" description="The portfolio service did not return editable content." />
       </div>
     );
   }

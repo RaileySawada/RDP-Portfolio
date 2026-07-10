@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import { ScrollToTop } from "../components/common/ScrollToTop";
 import { Sidebar, type NavItem } from "../components/layout/Sidebar";
+import { DataState } from "../components/ui/DataState";
 import { MenuIcon } from "../components/ui/Icons";
 import { usePortfolioData } from "../hooks/usePortfolioData";
 import { useTheme } from "../hooks/useTheme";
@@ -97,11 +98,5 @@ function PortfolioApp() {
 }
 
 function PortfolioDataState({ isLoading }: { isLoading: boolean }) {
-  return (
-    <section className="flex min-h-screen items-center justify-center px-6 text-center" aria-live="polite">
-      <p className="font-mono text-sm font-semibold uppercase text-neutral-500 dark:text-neutral-400">
-        {isLoading ? "Loading..." : "No Data Found"}
-      </p>
-    </section>
-  );
+  return <DataState type={isLoading ? "loading" : "empty"} label={isLoading ? "Loading portfolio" : "No Data Found"} fullPage />;
 }
