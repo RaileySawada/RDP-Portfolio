@@ -170,6 +170,7 @@ body {
 ::view-transition-new(root) {
   z-index: 1;
   will-change: clip-path;
+  transform: translateZ(0);
 }
 
 .dark body {

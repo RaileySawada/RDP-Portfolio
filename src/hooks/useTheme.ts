@@ -10,7 +10,7 @@ type StartViewTransition = (updateCallback: () => void) => {
 
 const storageKey = "portfolio-theme";
 const mediaQuery = "(prefers-color-scheme: dark)";
-const transitionDuration = 300;
+const transitionDuration = 460;
 
 function getSystemTheme(): ResolvedTheme {
   if (typeof window === "undefined") {
@@ -113,19 +113,21 @@ export function useTheme() {
       const { x, y, radius } = getTransitionCircle(originElement);
       const transition = document.startViewTransition(commitTheme);
 
-      void transition.ready.then(() => {
-        document.documentElement.animate(
-          {
-            clipPath: [`circle(0 at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`],
-          },
-          {
-            duration: transitionDuration,
-            easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-            fill: "both",
-            pseudoElement: "::view-transition-new(root)",
-          },
-        );
-      });
+      void transition.ready
+        .then(() => {
+          document.documentElement.animate(
+            {
+              clipPath: [`circle(0 at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`],
+            },
+            {
+              duration: transitionDuration,
+              easing: "cubic-bezier(0.45, 0, 0.2, 1)",
+              fill: "both",
+              pseudoElement: "::view-transition-new(root)",
+            },
+          );
+        })
+        .catch(() => undefined);
     },
     [resolvedTheme],
   );

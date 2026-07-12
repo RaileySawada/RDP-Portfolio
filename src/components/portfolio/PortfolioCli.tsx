@@ -62,8 +62,9 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
         }
 
         const link = document.createElement("a");
-        link.href = resumePath;
+        link.href = getResumeDownloadUrl(resumePath);
         link.download = "RaileyDelaPeña.pdf";
+        link.rel = "noopener";
         link.click();
         return ["Preparing resume download: RaileyDelaPeña.pdf"];
       },
@@ -186,4 +187,12 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
       </div>
     </article>
   );
+}
+
+function getResumeDownloadUrl(resumeUrl: string) {
+  if (!resumeUrl.includes("/image/upload/")) {
+    return resumeUrl;
+  }
+
+  return resumeUrl.replace("/image/upload/", "/image/upload/fl_attachment:RaileyDelaPena/");
 }
