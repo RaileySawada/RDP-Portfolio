@@ -49,8 +49,8 @@ export async function uploadAdminResume(session: AdminSession, file: File): Prom
     return { ok: false, error: "Select a PDF file." };
   }
 
-  if (file.size > 8 * 1024 * 1024) {
-    return { ok: false, error: "Resume must be under 8MB." };
+  if (file.size > 4 * 1024 * 1024) {
+    return { ok: false, error: "Resume must be under 4MB." };
   }
 
   try {

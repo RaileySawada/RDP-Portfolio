@@ -70,11 +70,11 @@ export async function handler(event) {
     const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
 
     const validFile = isResume
-      ? /^data:application\/pdf;base64,/i.test(file) && file.length <= 11_100_000
+      ? /^data:application\/pdf;base64,/i.test(file) && file.length <= 5_650_000
       : /^data:image\/(?:png|jpe?g|webp|gif);base64,/i.test(file) && file.length <= 5_650_000;
 
     if (!validFile) {
-      return jsonResponse(400, { error: isResume ? "Upload a PDF resume under 8MB." : "Upload a PNG, JPEG, WebP, or GIF image under 4MB." });
+      return jsonResponse(400, { error: isResume ? "Upload a PDF resume under 4MB." : "Upload a PNG, JPEG, WebP, or GIF image under 4MB." });
     }
 
     if (!cloudName || !apiKey || !apiSecret) {
