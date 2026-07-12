@@ -3753,6 +3753,36 @@ th[aria-sort="descending"] .admin-sort-indicator {
   color: rgb(255 255 255);
 }
 
+.cli-help-heading {
+  margin-top: 8px !important;
+  margin-bottom: 6px !important;
+  color: rgb(255 255 255);
+  font-weight: 800;
+}
+
+.cli-help-row {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  column-gap: 18px;
+  padding-block: 1px;
+}
+
+.cli-help-row strong {
+  color: rgb(74 222 128);
+  font-weight: 800;
+}
+
+.cli-help-row span {
+  color: rgb(212 212 212);
+}
+
+@media (max-width: 480px) {
+  .cli-help-row {
+    grid-template-columns: 76px minmax(0, 1fr);
+    column-gap: 12px;
+  }
+}
+
 .cli-input-row {
   display: flex;
   align-items: center;

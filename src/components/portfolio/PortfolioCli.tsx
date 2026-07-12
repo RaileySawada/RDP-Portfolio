@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import type { PortfolioData } from "../../data/portfolio";
 import { WindowBar } from "../ui/WindowBar";
 
-const fallbackResumePath = "/RaileyDelaPena.pdf";
-
 type PortfolioCliProps = {
   profile: PortfolioData["profile"];
 };
@@ -24,7 +22,7 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
     profile.socials.find((social) => social.label === "LinkedIn")?.href ||
     "https://www.linkedin.com/";
   const emailUrl = `mailto:${profile.email}`;
-  const resumePath = profile.socials.find((social) => social.label.toLowerCase() === "resume")?.href || fallbackResumePath;
+  const resumePath = profile.socials.find((social) => social.label.toLowerCase() === "resume")?.href;
 
   useEffect(() => {
     const node = outputRef.current;
@@ -43,18 +41,26 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
     const actions: Record<string, () => string[]> = {
       help: () => [
         "Available commands:",
-        "  view      Open my resume in a new tab",
-        "  download  Download my resume as PDF",
-        "  github    Open my GitHub profile",
-        "  linkedin  Open my LinkedIn profile",
-        "  email     Compose an email to me",
-        "  clear     Clear this terminal",
+        "view\tOpen my resume in a new tab",
+        "download\tDownload my resume as a PDF",
+        "github\tOpen my GitHub profile",
+        "linkedin\tOpen my LinkedIn profile",
+        "email\tCompose an email to me",
+        "clear\tClear this terminal",
       ],
       view: () => {
+        if (!resumePath) {
+          return ["Resume is not available yet."];
+        }
+
         window.open(resumePath, "_blank", "noopener,noreferrer");
         return ["Opening resume in a new tab."];
       },
       download: () => {
+        if (!resumePath) {
+          return ["Resume is not available yet."];
+        }
+
         const link = document.createElement("a");
         link.href = resumePath;
         link.download = "RaileyDelaPeña.pdf";
@@ -147,10 +153,15 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
         <div className="cli-output">
           {history.map((line, index) => (
             <p
-              className={line.startsWith("rdp@") ? "cli-command" : ""}
+              className={line.startsWith("rdp@") ? "cli-command" : line === "Available commands:" ? "cli-help-heading" : line.includes("\t") ? "cli-help-row" : ""}
               key={`${line}-${index}`}
             >
-              {line}
+              {line.includes("\t") ? (
+                <>
+                  <strong>{line.split("\t", 2)[0]}</strong>
+                  <span>{line.split("\t", 2)[1]}</span>
+                </>
+              ) : line}
             </p>
           ))}
         </div>
