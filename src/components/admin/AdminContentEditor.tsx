@@ -225,6 +225,17 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
     setMessage("Resume uploaded. The new link is being saved.");
   };
 
+  const removeResume = () => {
+    setPortfolio((current) => ({
+      ...current,
+      profile: {
+        ...current.profile,
+        socials: current.profile.socials.filter((social) => social.label.toLowerCase() !== "resume"),
+      },
+    }));
+    setMessage("Resume removed from the portfolio. The change is being saved.");
+  };
+
   const addProject = (project: Project) => {
     setPortfolio((current) => ({
       ...current,
@@ -344,6 +355,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
     }
 
     if (activeSection === "links") {
+      const resumeUrl = portfolio.profile.socials.find((social) => social.label.toLowerCase() === "resume")?.href || "";
       const linkStats = [
         { label: "Total links", value: portfolio.profile.socials.length },
         { label: "Ready links", value: portfolio.profile.socials.filter((social) => social.href.trim()).length },
@@ -353,19 +365,33 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
       return (
         <AdminSectionLayout details={sectionDetails.links} stats={linkStats}>
           <EditorPanel title="Resume PDF" description="Upload a PDF to Cloudinary and keep the public resume commands linked to the latest file.">
-            <label className="admin-resume-upload">
-              <span>{isUploadingResume ? "Uploading resume..." : "Choose PDF resume"}</span>
-              <input
-                type="file"
-                accept="application/pdf,.pdf"
-                disabled={isUploadingResume}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void uploadResume(file);
-                  event.target.value = "";
-                }}
-              />
-            </label>
+            <div className={`admin-resume-manager ${resumeUrl ? "has-resume" : ""}`}>
+              {resumeUrl ? (
+                <>
+                  <div className="admin-resume-status">
+                    <span><i aria-hidden="true" />Resume uploaded</span>
+                    <small>Stored in Cloudinary and connected to your portfolio.</small>
+                  </div>
+                  <div className="admin-resume-preview">
+                    <iframe src={`${resumeUrl}#toolbar=0&navpanes=0`} title="Current resume PDF preview" />
+                  </div>
+                  <div className="admin-resume-actions">
+                    <a href={resumeUrl} target="_blank" rel="noreferrer">View PDF</a>
+                    <ResumeUploadButton isUploading={isUploadingResume} label="Replace PDF" onUpload={uploadResume} />
+                    <button className="admin-resume-remove" type="button" onClick={removeResume}>
+                      <TrashIcon className="h-4 w-4" />
+                      <span>Remove</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="admin-resume-empty">
+                  <strong>No resume uploaded</strong>
+                  <p>Upload a PDF to enable the resume commands on your public portfolio.</p>
+                  <ResumeUploadButton isUploading={isUploadingResume} label="Upload PDF resume" onUpload={uploadResume} />
+                </div>
+              )}
+            </div>
           </EditorPanel>
           <EditorPanel
             title="Link library"
@@ -483,6 +509,24 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
 
       {renderContentSection()}
     </div>
+  );
+}
+
+function ResumeUploadButton({ isUploading, label, onUpload }: { isUploading: boolean; label: string; onUpload: (file: File) => Promise<void> }) {
+  return (
+    <label className="admin-resume-upload">
+      <span>{isUploading ? "Uploading resume..." : label}</span>
+      <input
+        type="file"
+        accept="application/pdf,.pdf"
+        disabled={isUploading}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void onUpload(file);
+          event.target.value = "";
+        }}
+      />
+    </label>
   );
 }
 

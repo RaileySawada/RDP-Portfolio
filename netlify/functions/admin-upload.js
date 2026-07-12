@@ -26,8 +26,13 @@ async function validateSession(payload) {
   return session.tokenHash === hashValue(token);
 }
 
-function signUpload(folder, timestamp, apiSecret) {
-  return crypto.createHash("sha1").update(`folder=${folder}&timestamp=${timestamp}${apiSecret}`).digest("hex");
+function signUpload(parameters, apiSecret) {
+  const signaturePayload = Object.entries(parameters)
+    .sort(([firstKey], [secondKey]) => firstKey.localeCompare(secondKey))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+
+  return crypto.createHash("sha1").update(`${signaturePayload}${apiSecret}`).digest("hex");
 }
 
 export async function handler(event) {
@@ -77,15 +82,16 @@ export async function handler(event) {
     }
 
     const timestamp = Math.round(Date.now() / 1000);
+    const uploadParameters = isResume
+      ? { folder, invalidate: "true", overwrite: "true", public_id: "current_resume", timestamp: String(timestamp) }
+      : { folder, timestamp: String(timestamp) };
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("folder", folder);
-    formData.append("timestamp", String(timestamp));
+    Object.entries(uploadParameters).forEach(([key, value]) => formData.append(key, value));
     formData.append("api_key", apiKey);
-    formData.append("signature", signUpload(folder, timestamp, apiSecret));
+    formData.append("signature", signUpload(uploadParameters, apiSecret));
 
-    const resourceType = isResume ? "raw" : "image";
-    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
       method: "POST",
       body: formData,
     });
