@@ -2814,10 +2814,22 @@ th[aria-sort="descending"] .admin-sort-indicator {
   background: rgb(245 245 245);
 }
 
-.admin-resume-preview iframe {
+.admin-resume-preview img {
+  display: block;
   width: 100%;
   height: 100%;
-  border: 0;
+  object-fit: contain;
+  object-position: top center;
+}
+
+.admin-resume-preview > p {
+  display: grid;
+  height: 100%;
+  place-items: center;
+  margin: 0;
+  padding: 20px;
+  color: rgb(82 82 82);
+  text-align: center;
 }
 
 .admin-resume-actions {
@@ -2851,7 +2863,8 @@ th[aria-sort="descending"] .admin-sort-indicator {
 }
 
 .dark .admin-resume-empty p,
-.dark .admin-resume-status small {
+.dark .admin-resume-status small,
+.dark .admin-resume-preview > p {
   color: rgb(163 163 163);
 }
 

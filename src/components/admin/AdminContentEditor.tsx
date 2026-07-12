@@ -356,6 +356,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
 
     if (activeSection === "links") {
       const resumeUrl = portfolio.profile.socials.find((social) => social.label.toLowerCase() === "resume")?.href || "";
+      const resumePreviewUrl = getCloudinaryPdfPreviewUrl(resumeUrl);
       const linkStats = [
         { label: "Total links", value: portfolio.profile.socials.length },
         { label: "Ready links", value: portfolio.profile.socials.filter((social) => social.href.trim()).length },
@@ -373,7 +374,11 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
                     <small>Stored in Cloudinary and connected to your portfolio.</small>
                   </div>
                   <div className="admin-resume-preview">
-                    <iframe src={`${resumeUrl}#toolbar=0&navpanes=0`} title="Current resume PDF preview" />
+                    {resumePreviewUrl ? (
+                      <img src={resumePreviewUrl} alt="First page of the current resume" />
+                    ) : (
+                      <p>Preview unavailable. Use View PDF to open the resume.</p>
+                    )}
                   </div>
                   <div className="admin-resume-actions">
                     <a href={resumeUrl} target="_blank" rel="noreferrer">View PDF</a>
@@ -528,6 +533,16 @@ function ResumeUploadButton({ isUploading, label, onUpload }: { isUploading: boo
       />
     </label>
   );
+}
+
+function getCloudinaryPdfPreviewUrl(resumeUrl: string) {
+  if (!resumeUrl || !resumeUrl.includes("/image/upload/") || !resumeUrl.toLowerCase().endsWith(".pdf")) {
+    return "";
+  }
+
+  return resumeUrl
+    .replace("/image/upload/", "/image/upload/pg_1,w_1200,c_limit,f_jpg,q_auto/")
+    .replace(/\.pdf$/i, ".jpg");
 }
 
 function AdminSectionLayout({
