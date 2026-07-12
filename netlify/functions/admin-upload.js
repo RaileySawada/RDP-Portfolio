@@ -65,16 +65,11 @@ export async function handler(event) {
     }
 
     const file = String(payload.file || "");
-    const isResume = payload.fileType === "resume";
     const folder = String(payload.folder || "portfolio/admin").replace(/[^a-zA-Z0-9_/-]/g, "").slice(0, 120) || "portfolio/admin";
     const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
 
-    const validFile = isResume
-      ? /^data:application\/pdf;base64,/i.test(file) && file.length <= 5_650_000
-      : /^data:image\/(?:png|jpe?g|webp|gif);base64,/i.test(file) && file.length <= 5_650_000;
-
-    if (!validFile) {
-      return jsonResponse(400, { error: isResume ? "Upload a PDF resume under 4MB." : "Upload a PNG, JPEG, WebP, or GIF image under 4MB." });
+    if (!/^data:image\/(?:png|jpe?g|webp|gif);base64,/i.test(file) || file.length > 5_650_000) {
+      return jsonResponse(400, { error: "Upload a PNG, JPEG, WebP, or GIF image under 4MB." });
     }
 
     if (!cloudName || !apiKey || !apiSecret) {
@@ -82,9 +77,7 @@ export async function handler(event) {
     }
 
     const timestamp = Math.round(Date.now() / 1000);
-    const uploadParameters = isResume
-      ? { folder, invalidate: "true", overwrite: "true", public_id: "current_resume", timestamp: String(timestamp) }
-      : { folder, timestamp: String(timestamp) };
+    const uploadParameters = { folder, timestamp: String(timestamp) };
     const formData = new FormData();
     formData.append("file", file);
     Object.entries(uploadParameters).forEach(([key, value]) => formData.append(key, value));

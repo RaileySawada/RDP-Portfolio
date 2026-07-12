@@ -4,7 +4,6 @@ import type { Certification, PortfolioData, Project, SkillGroup, SocialLink, Sta
 import { emptyPortfolio } from "../../data/portfolio";
 import { getPortfolioData, normalizePortfolioData } from "../../services/portfolio";
 import { savePortfolioData } from "../../services/adminPortfolio";
-import { uploadAdminResume } from "../../services/adminUpload";
 import type { AdminSession } from "../../services/adminAuth";
 import { DataState } from "../ui/DataState";
 import { PlusIcon, SocialIcon, TrashIcon } from "../ui/Icons";
@@ -71,7 +70,6 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [message, setMessage] = useState("");
-  const [isUploadingResume, setIsUploadingResume] = useState(false);
   const hasLoadedPortfolio = useRef(false);
   const hasPortfolioDataRef = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -203,39 +201,6 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
     }));
   };
 
-  const uploadResume = async (file: File) => {
-    setIsUploadingResume(true);
-    setMessage("");
-    const result = await uploadAdminResume(session, file);
-    setIsUploadingResume(false);
-
-    if (!result.ok) {
-      setMessage(result.error);
-      return;
-    }
-
-    setPortfolio((current) => {
-      const resumeIndex = current.profile.socials.findIndex((social) => social.label.toLowerCase() === "resume");
-      const socials = resumeIndex === -1
-        ? [...current.profile.socials, { label: "Resume", href: result.url }]
-        : current.profile.socials.map((social, index) => (index === resumeIndex ? { ...social, href: result.url } : social));
-
-      return { ...current, profile: { ...current.profile, socials } };
-    });
-    setMessage("Resume uploaded. The new link is being saved.");
-  };
-
-  const removeResume = () => {
-    setPortfolio((current) => ({
-      ...current,
-      profile: {
-        ...current.profile,
-        socials: current.profile.socials.filter((social) => social.label.toLowerCase() !== "resume"),
-      },
-    }));
-    setMessage("Resume removed from the portfolio. The change is being saved.");
-  };
-
   const addProject = (project: Project) => {
     setPortfolio((current) => ({
       ...current,
@@ -355,8 +320,6 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
     }
 
     if (activeSection === "links") {
-      const resumeUrl = portfolio.profile.socials.find((social) => social.label.toLowerCase() === "resume")?.href || "";
-      const resumePreviewUrl = getCloudinaryPdfPreviewUrl(resumeUrl);
       const linkStats = [
         { label: "Total links", value: portfolio.profile.socials.length },
         { label: "Ready links", value: portfolio.profile.socials.filter((social) => social.href.trim()).length },
@@ -365,39 +328,6 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
 
       return (
         <AdminSectionLayout details={sectionDetails.links} stats={linkStats}>
-          <EditorPanel title="Resume PDF" description="Upload a PDF to Cloudinary and keep the public resume commands linked to the latest file.">
-            <div className={`admin-resume-manager ${resumeUrl ? "has-resume" : ""}`}>
-              {resumeUrl ? (
-                <>
-                  <div className="admin-resume-status">
-                    <span><i aria-hidden="true" />Resume uploaded</span>
-                    <small>Stored in Cloudinary and connected to your portfolio.</small>
-                  </div>
-                  <div className="admin-resume-preview">
-                    {resumePreviewUrl ? (
-                      <img src={resumePreviewUrl} alt="First page of the current resume" />
-                    ) : (
-                      <p>Preview unavailable. Use View PDF to open the resume.</p>
-                    )}
-                  </div>
-                  <div className="admin-resume-actions">
-                    <a href={resumeUrl} target="_blank" rel="noreferrer">View PDF</a>
-                    <ResumeUploadButton isUploading={isUploadingResume} label="Replace PDF" onUpload={uploadResume} />
-                    <button className="admin-resume-remove" type="button" onClick={removeResume}>
-                      <TrashIcon className="h-4 w-4" />
-                      <span>Remove</span>
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="admin-resume-empty">
-                  <strong>No resume uploaded</strong>
-                  <p>Upload a PDF to enable the resume commands on your public portfolio.</p>
-                  <ResumeUploadButton isUploading={isUploadingResume} label="Upload PDF resume" onUpload={uploadResume} />
-                </div>
-              )}
-            </div>
-          </EditorPanel>
           <EditorPanel
             title="Link library"
             count={portfolio.profile.socials.length}
@@ -515,34 +445,6 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
       {renderContentSection()}
     </div>
   );
-}
-
-function ResumeUploadButton({ isUploading, label, onUpload }: { isUploading: boolean; label: string; onUpload: (file: File) => Promise<void> }) {
-  return (
-    <label className="admin-resume-upload">
-      <span>{isUploading ? "Uploading resume..." : label}</span>
-      <input
-        type="file"
-        accept="application/pdf,.pdf"
-        disabled={isUploading}
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) void onUpload(file);
-          event.target.value = "";
-        }}
-      />
-    </label>
-  );
-}
-
-function getCloudinaryPdfPreviewUrl(resumeUrl: string) {
-  if (!resumeUrl || !resumeUrl.includes("/image/upload/") || !resumeUrl.toLowerCase().endsWith(".pdf")) {
-    return "";
-  }
-
-  return resumeUrl
-    .replace("/image/upload/", "/image/upload/pg_1,w_1200,c_limit,f_jpg,q_auto/")
-    .replace(/\.pdf$/i, ".jpg");
 }
 
 function AdminSectionLayout({

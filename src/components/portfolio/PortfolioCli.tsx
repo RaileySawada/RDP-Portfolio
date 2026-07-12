@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { PortfolioData } from "../../data/portfolio";
 import { WindowBar } from "../ui/WindowBar";
 
+const resumePath = "/RaileyDelaPena.pdf";
+
 type PortfolioCliProps = {
   profile: PortfolioData["profile"];
 };
@@ -22,7 +24,6 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
     profile.socials.find((social) => social.label === "LinkedIn")?.href ||
     "https://www.linkedin.com/";
   const emailUrl = `mailto:${profile.email}`;
-  const resumePath = profile.socials.find((social) => social.label.toLowerCase() === "resume")?.href;
 
   useEffect(() => {
     const node = outputRef.current;
@@ -30,35 +31,6 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
       node.scrollTop = node.scrollHeight;
     }
   }, [history]);
-
-  const downloadResume = async () => {
-    if (!resumePath) {
-      return;
-    }
-
-    try {
-      const response = await fetch(resumePath);
-
-      const contentType = response.headers.get("content-type") || "";
-
-      if (!response.ok || !contentType.includes("application/pdf")) {
-        throw new Error("Resume request failed.");
-      }
-
-      const file = await response.blob();
-      const downloadUrl = URL.createObjectURL(file);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = "RaileyDelaPena.pdf";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1_000);
-      setHistory((currentHistory) => [...currentHistory, "Resume downloaded successfully."]);
-    } catch {
-      setHistory((currentHistory) => [...currentHistory, "Resume download failed. Please try again."]);
-    }
-  };
 
   const runCommand = (rawCommand: string) => {
     const nextCommand = rawCommand.trim().toLowerCase();
@@ -78,19 +50,14 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
         "clear\tClear this terminal",
       ],
       view: () => {
-        if (!resumePath) {
-          return ["Resume is not available yet."];
-        }
-
         window.open(resumePath, "_blank", "noopener,noreferrer");
         return ["Opening resume in a new tab."];
       },
       download: () => {
-        if (!resumePath) {
-          return ["Resume is not available yet."];
-        }
-
-        void downloadResume();
+        const link = document.createElement("a");
+        link.href = resumePath;
+        link.download = "RaileyDelaPena.pdf";
+        link.click();
         return ["Preparing resume download: RaileyDelaPeña.pdf"];
       },
       github: () => {
@@ -161,6 +128,7 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
 
   return (
     <article
+      id="resume-cli"
       className="cli-panel"
       aria-label="Portfolio command line"
       onClick={() => inputRef.current?.focus()}

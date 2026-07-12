@@ -10,6 +10,7 @@ type HeroProps = {
 export function Hero({ portfolio }: HeroProps) {
   const { certifications, profile, projects, stackGroups } = portfolio;
   const stackCount = stackGroups.reduce((total, group) => total + group.items.length, 0);
+  const publicSocials = profile.socials.filter((social) => social.label.toLowerCase() !== "resume");
 
   return (
     <section className="section-shell hero-section flex items-center pt-24 pb-16 lg:pt-20">
@@ -30,6 +31,10 @@ export function Hero({ portfolio }: HeroProps) {
             {profile.name}
           </h1>
           <p className="mt-3 text-lg font-medium text-neutral-700 dark:text-neutral-300">{profile.title}</p>
+          <p className="mt-4 inline-flex w-fit max-w-full items-center gap-2 whitespace-nowrap rounded-full border border-neutral-200 bg-white/70 px-3 py-2 text-sm font-semibold text-neutral-700 dark:border-neutral-800 dark:bg-neutral-950/70 dark:text-neutral-300">
+            <i className="h-2 w-2 shrink-0 rounded-full bg-green-500 shadow-[0_0_0_4px_rgb(34_197_94_/_0.12)]" aria-hidden="true" />
+            <span>Available for opportunities</span>
+          </p>
           <p className="mt-6 max-w-2xl text-base leading-8 text-neutral-600 dark:text-neutral-400">{profile.summary}</p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -43,12 +48,16 @@ export function Hero({ portfolio }: HeroProps) {
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            {profile.socials.map((social) => (
+            {publicSocials.map((social) => (
               <a className="social-link" href={social.href} key={social.label} aria-label={social.label}>
                 <SocialIcon label={social.label} />
                 <span>{social.label}</span>
               </a>
             ))}
+            <Link className="social-link" to="/about#resume-cli" aria-label="Open resume command line">
+              <SocialIcon label="Resume" />
+              <span>Resume</span>
+            </Link>
           </div>
 
           <div className="mt-10 grid gap-3 sm:grid-cols-3">
