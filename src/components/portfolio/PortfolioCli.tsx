@@ -31,6 +31,35 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
     }
   }, [history]);
 
+  const downloadResume = async () => {
+    if (!resumePath) {
+      return;
+    }
+
+    try {
+      const response = await fetch(resumePath);
+
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!response.ok || !contentType.includes("application/pdf")) {
+        throw new Error("Resume request failed.");
+      }
+
+      const file = await response.blob();
+      const downloadUrl = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "RaileyDelaPena.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1_000);
+      setHistory((currentHistory) => [...currentHistory, "Resume downloaded successfully."]);
+    } catch {
+      setHistory((currentHistory) => [...currentHistory, "Resume download failed. Please try again."]);
+    }
+  };
+
   const runCommand = (rawCommand: string) => {
     const nextCommand = rawCommand.trim().toLowerCase();
 
@@ -61,11 +90,7 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
           return ["Resume is not available yet."];
         }
 
-        const link = document.createElement("a");
-        link.href = "/.netlify/functions/resume-download";
-        link.download = "RaileyDelaPeña.pdf";
-        link.rel = "noopener";
-        link.click();
+        void downloadResume();
         return ["Preparing resume download: RaileyDelaPeña.pdf"];
       },
       github: () => {
