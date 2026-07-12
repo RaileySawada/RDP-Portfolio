@@ -100,3 +100,30 @@ export async function fetchAdminAnalytics(session: AdminSession): Promise<AdminA
 
   return fallbackAnalytics;
 }
+
+export function subscribeAdminAnalytics(session: AdminSession, onChange: (analytics: AdminAnalytics) => void) {
+  let isActive = true;
+  let hasDeliveredLiveData = false;
+
+  const refresh = () => {
+    void fetchAdminAnalytics(session).then((analytics) => {
+      const isLiveData = analytics.lastUpdatedAt > 0;
+      if (!isActive || (!isLiveData && hasDeliveredLiveData)) return;
+      hasDeliveredLiveData = isLiveData;
+      onChange(analytics);
+    });
+  };
+  const refreshWhenVisible = () => {
+    if (document.visibilityState === "visible") refresh();
+  };
+
+  refresh();
+  const intervalId = window.setInterval(refreshWhenVisible, 5_000);
+  document.addEventListener("visibilitychange", refreshWhenVisible);
+
+  return () => {
+    isActive = false;
+    window.clearInterval(intervalId);
+    document.removeEventListener("visibilitychange", refreshWhenVisible);
+  };
+}

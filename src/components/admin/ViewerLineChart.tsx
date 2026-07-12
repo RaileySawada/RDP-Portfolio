@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ViewerPoint } from "../../services/adminAnalytics";
 import { DataState } from "../ui/DataState";
 
@@ -47,6 +47,7 @@ function getNiceMaximum(value: number) {
 
 export function ViewerLineChart({ data, totalViewers }: ViewerLineChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const graphScrollRef = useRef<HTMLDivElement>(null);
   const chart = useMemo(() => {
     const innerWidth = width - padding.left - padding.right;
     const innerHeight = height - padding.top - padding.bottom;
@@ -76,6 +77,18 @@ export function ViewerLineChart({ data, totalViewers }: ViewerLineChartProps) {
     return { points, maxValue, totalNew, cumulativeTotal: cumulativeValues.at(-1) || 0, peak };
   }, [data, totalViewers]);
 
+  useEffect(() => {
+    const graphScroll = graphScrollRef.current;
+
+    if (!graphScroll || data.length === 0) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      graphScroll.scrollLeft = graphScroll.scrollWidth;
+    });
+  }, [data.length]);
+
   if (data.length === 0) {
     return <DataState type="empty" label="No viewer data yet" description="Viewer activity will appear here once visits are recorded." />;
   }
@@ -92,7 +105,8 @@ export function ViewerLineChart({ data, totalViewers }: ViewerLineChartProps) {
         <span><small>Peak day</small><strong>{chart.peak?.label || "-"}</strong></span>
       </div>
 
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Daily new and returning viewer line graph">
+      <div className="viewer-graph-scroll" ref={graphScrollRef}>
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Daily new and returning viewer line graph">
         <defs>
           <linearGradient id="viewerCumulativeFill" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="currentColor" stopOpacity="0.14" />
@@ -151,7 +165,8 @@ export function ViewerLineChart({ data, totalViewers }: ViewerLineChartProps) {
             <text className="chart-tooltip-value" x="150" y="68">{active.cumulative}</text>
           </g>
         ) : null}
-      </svg>
+        </svg>
+      </div>
 
       <div className="chart-legend">
         <span><i className="is-viewers" />New users</span>

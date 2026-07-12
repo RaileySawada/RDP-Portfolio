@@ -10,7 +10,7 @@ type StartViewTransition = (updateCallback: () => void) => {
 
 const storageKey = "portfolio-theme";
 const mediaQuery = "(prefers-color-scheme: dark)";
-const transitionDuration = 420;
+const transitionDuration = 300;
 
 function getSystemTheme(): ResolvedTheme {
   if (typeof window === "undefined") {
@@ -47,20 +47,18 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function getTransitionOrigin(element?: HTMLElement) {
-  if (!element) {
-    return { x: window.innerWidth, y: 0 };
-  }
+function getTransitionCircle(element?: HTMLElement) {
+  const rect = element?.getBoundingClientRect();
+  const x = rect ? rect.left + rect.width / 2 : window.innerWidth;
+  const y = rect ? rect.top + rect.height / 2 : 0;
+  const horizontalDistance = Math.max(x, window.innerWidth - x);
+  const verticalDistance = Math.max(y, window.innerHeight - y);
 
-  const rect = element.getBoundingClientRect();
   return {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2,
+    x: Math.round(x),
+    y: Math.round(y),
+    radius: Math.ceil(Math.hypot(horizontalDistance, verticalDistance)),
   };
-}
-
-function getEndRadius(x: number, y: number) {
-  return Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
 }
 
 function supportsViewTransition(documentElement: Document): documentElement is Document & { startViewTransition: StartViewTransition } {
@@ -112,18 +110,18 @@ export function useTheme() {
         return;
       }
 
-      const { x, y } = getTransitionOrigin(originElement);
-      const endRadius = getEndRadius(x, y);
+      const { x, y, radius } = getTransitionCircle(originElement);
       const transition = document.startViewTransition(commitTheme);
 
       void transition.ready.then(() => {
         document.documentElement.animate(
           {
-            clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`],
+            clipPath: [`circle(0 at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`],
           },
           {
             duration: transitionDuration,
-            easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+            easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+            fill: "both",
             pseudoElement: "::view-transition-new(root)",
           },
         );

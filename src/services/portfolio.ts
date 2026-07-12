@@ -87,6 +87,27 @@ function getDevelopmentPortfolio(): PortfolioData | null {
 }
 
 export function subscribePortfolioData(onChange: (portfolio: PortfolioData | null) => void): () => void {
-  void getPortfolioData().then(onChange);
-  return () => undefined;
+  let isActive = true;
+  let hasDeliveredData = false;
+
+  const refresh = () => {
+    void getPortfolioData().then((portfolio) => {
+      if (!isActive || (!portfolio && hasDeliveredData)) return;
+      hasDeliveredData = Boolean(portfolio);
+      onChange(portfolio);
+    });
+  };
+  const refreshWhenVisible = () => {
+    if (document.visibilityState === "visible") refresh();
+  };
+
+  refresh();
+  const intervalId = window.setInterval(refreshWhenVisible, 10_000);
+  document.addEventListener("visibilitychange", refreshWhenVisible);
+
+  return () => {
+    isActive = false;
+    window.clearInterval(intervalId);
+    document.removeEventListener("visibilitychange", refreshWhenVisible);
+  };
 }

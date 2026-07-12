@@ -40,6 +40,9 @@ export function AdminSidebar({ activeView, adminProfile, portfolioProfile, isOpe
       return;
     }
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         onClose();
@@ -47,7 +50,10 @@ export function AdminSidebar({ activeView, adminProfile, portfolioProfile, isOpe
     };
 
     document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [isOpen, onClose]);
 
   useEffect(() => {

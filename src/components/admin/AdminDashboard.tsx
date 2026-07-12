@@ -4,7 +4,7 @@ import type { Profile } from "../../data/portfolio";
 import { useCountUp } from "../../hooks/useCountUp";
 import type { ThemePreference } from "../../hooks/useTheme";
 import { clearAdminSession, type AdminSession } from "../../services/adminAuth";
-import { fetchAdminAnalytics, fallbackAnalytics, type AdminAnalytics } from "../../services/adminAnalytics";
+import { fallbackAnalytics, subscribeAdminAnalytics, type AdminAnalytics } from "../../services/adminAnalytics";
 import { MenuIcon } from "../ui/Icons";
 import { DataState } from "../ui/DataState";
 import { AdminActivityTable } from "./AdminActivityTable";
@@ -35,23 +35,10 @@ export function AdminDashboard({ portfolioProfile, session, selectedTheme, onSel
   const activeView: AdminView = isAdminView(view) ? view : "analytics";
 
   useEffect(() => {
-    let isMounted = true;
-
-    fetchAdminAnalytics(session)
-      .then((nextAnalytics) => {
-        if (isMounted) {
-          setAnalytics(nextAnalytics);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
+    return subscribeAdminAnalytics(session, (nextAnalytics) => {
+      setAnalytics(nextAnalytics);
+      setIsLoading(false);
+    });
   }, [session]);
 
   useEffect(() => {

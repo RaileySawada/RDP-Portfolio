@@ -153,6 +153,7 @@ body {
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+  backface-visibility: hidden;
 }
 
 .viewer-avatar-image {
@@ -168,6 +169,7 @@ body {
 
 ::view-transition-new(root) {
   z-index: 1;
+  will-change: clip-path;
 }
 
 .dark body {
@@ -547,11 +549,14 @@ body {
   top: 0;
   display: flex;
   height: 100vh;
+  height: 100dvh;
   width: min(80vw, 280px);
   flex-direction: column;
   border-right: 1px solid rgb(229 229 229);
   background: rgb(255 255 255 / 92%);
   padding: 24px 18px;
+  box-sizing: border-box;
+  overflow: hidden;
   backdrop-filter: blur(16px);
   box-shadow: 24px 0 60px rgb(10 10 10 / 12%);
   transform: translateX(-100%);
@@ -673,6 +678,10 @@ body {
   display: grid;
   gap: 6px;
   margin-top: 34px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 12px;
 }
 
 .admin-sidebar-nav-group {
@@ -780,6 +789,7 @@ body {
   margin-top: auto;
   border-top: 1px solid rgb(229 229 229);
   padding-top: 16px;
+  flex: 0 0 auto;
 }
 
 .admin-sidebar-foot .theme-toggle {
@@ -1586,6 +1596,30 @@ body {
   background: rgb(250 250 250);
   color: rgb(64 64 64);
   font-weight: 760;
+}
+
+.viewer-graph-scroll {
+  overflow: visible;
+}
+
+@media (max-width: 640px) {
+  .viewer-graph-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .viewer-graph-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .viewer-graph-scroll svg {
+    width: 760px;
+    max-width: none;
+  }
 }
 
 .admin-sort-button {
@@ -2712,6 +2746,38 @@ th[aria-sort="descending"] .admin-sort-indicator {
   transition:
     border-color 160ms ease,
     transform 160ms ease;
+}
+
+.admin-resume-upload {
+  display: inline-flex;
+  min-height: 42px;
+  width: max-content;
+  cursor: pointer;
+  align-items: center;
+  border-radius: 6px;
+  background: rgb(10 10 10);
+  padding: 0 16px;
+  color: rgb(255 255 255);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-resume-upload:has(input:disabled) {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.admin-resume-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.dark .admin-resume-upload {
+  background: rgb(245 245 245);
+  color: rgb(10 10 10);
 }
 
 .admin-compact-add-button:hover {

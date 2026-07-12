@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PortfolioData } from "../../data/portfolio";
 import { WindowBar } from "../ui/WindowBar";
 
-const resumePath = "/RaileyDelaPena.pdf";
+const fallbackResumePath = "/RaileyDelaPena.pdf";
 
 type PortfolioCliProps = {
   profile: PortfolioData["profile"];
@@ -24,6 +24,7 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
     profile.socials.find((social) => social.label === "LinkedIn")?.href ||
     "https://www.linkedin.com/";
   const emailUrl = `mailto:${profile.email}`;
+  const resumePath = profile.socials.find((social) => social.label.toLowerCase() === "resume")?.href || fallbackResumePath;
 
   useEffect(() => {
     const node = outputRef.current;

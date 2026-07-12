@@ -4,6 +4,7 @@ import type { Certification, PortfolioData, Project, SkillGroup, SocialLink, Sta
 import { emptyPortfolio } from "../../data/portfolio";
 import { getPortfolioData, normalizePortfolioData } from "../../services/portfolio";
 import { savePortfolioData } from "../../services/adminPortfolio";
+import { uploadAdminResume } from "../../services/adminUpload";
 import type { AdminSession } from "../../services/adminAuth";
 import { DataState } from "../ui/DataState";
 import { PlusIcon, SocialIcon, TrashIcon } from "../ui/Icons";
@@ -70,6 +71,7 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [message, setMessage] = useState("");
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
   const hasLoadedPortfolio = useRef(false);
   const hasPortfolioDataRef = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -201,6 +203,28 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
     }));
   };
 
+  const uploadResume = async (file: File) => {
+    setIsUploadingResume(true);
+    setMessage("");
+    const result = await uploadAdminResume(session, file);
+    setIsUploadingResume(false);
+
+    if (!result.ok) {
+      setMessage(result.error);
+      return;
+    }
+
+    setPortfolio((current) => {
+      const resumeIndex = current.profile.socials.findIndex((social) => social.label.toLowerCase() === "resume");
+      const socials = resumeIndex === -1
+        ? [...current.profile.socials, { label: "Resume", href: result.url }]
+        : current.profile.socials.map((social, index) => (index === resumeIndex ? { ...social, href: result.url } : social));
+
+      return { ...current, profile: { ...current.profile, socials } };
+    });
+    setMessage("Resume uploaded. The new link is being saved.");
+  };
+
   const addProject = (project: Project) => {
     setPortfolio((current) => ({
       ...current,
@@ -328,6 +352,21 @@ export function AdminContentEditor({ session }: AdminContentEditorProps) {
 
       return (
         <AdminSectionLayout details={sectionDetails.links} stats={linkStats}>
+          <EditorPanel title="Resume PDF" description="Upload a PDF to Cloudinary and keep the public resume commands linked to the latest file.">
+            <label className="admin-resume-upload">
+              <span>{isUploadingResume ? "Uploading resume..." : "Choose PDF resume"}</span>
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                disabled={isUploadingResume}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadResume(file);
+                  event.target.value = "";
+                }}
+              />
+            </label>
+          </EditorPanel>
           <EditorPanel
             title="Link library"
             count={portfolio.profile.socials.length}

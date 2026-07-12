@@ -16,16 +16,30 @@ export function useVisitorStats() {
     });
 
     const heartbeat = window.setInterval(() => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
       void recordVisit("heartbeat").then((nextStats) => {
         if (mounted) {
           setStats(nextStats);
         }
       });
-    }, 30000);
+    }, 15_000);
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void recordVisit("heartbeat").then((nextStats) => {
+          if (mounted) setStats(nextStats);
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
 
     return () => {
       mounted = false;
       window.clearInterval(heartbeat);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, []);
 

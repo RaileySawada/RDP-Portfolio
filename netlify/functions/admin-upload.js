@@ -46,7 +46,7 @@ export async function handler(event) {
       return rateLimit.response;
     }
 
-    const parsedBody = parseJsonBody(event, 5_700_000);
+    const parsedBody = parseJsonBody(event, 11_200_000);
 
     if (!parsedBody.ok) {
       return jsonResponse(400, { error: parsedBody.error });
@@ -60,11 +60,16 @@ export async function handler(event) {
     }
 
     const file = String(payload.file || "");
+    const isResume = payload.fileType === "resume";
     const folder = String(payload.folder || "portfolio/admin").replace(/[^a-zA-Z0-9_/-]/g, "").slice(0, 120) || "portfolio/admin";
     const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
 
-    if (!/^data:image\/(?:png|jpe?g|webp|gif);base64,/i.test(file) || file.length > 5_650_000) {
-      return jsonResponse(400, { error: "Upload a PNG, JPEG, WebP, or GIF image under 4MB." });
+    const validFile = isResume
+      ? /^data:application\/pdf;base64,/i.test(file) && file.length <= 11_100_000
+      : /^data:image\/(?:png|jpe?g|webp|gif);base64,/i.test(file) && file.length <= 5_650_000;
+
+    if (!validFile) {
+      return jsonResponse(400, { error: isResume ? "Upload a PDF resume under 8MB." : "Upload a PNG, JPEG, WebP, or GIF image under 4MB." });
     }
 
     if (!cloudName || !apiKey || !apiSecret) {
@@ -79,7 +84,8 @@ export async function handler(event) {
     formData.append("api_key", apiKey);
     formData.append("signature", signUpload(folder, timestamp, apiSecret));
 
-    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    const resourceType = isResume ? "raw" : "image";
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
       method: "POST",
       body: formData,
     });
