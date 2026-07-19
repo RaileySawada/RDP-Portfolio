@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PortfolioData } from "../../data/portfolio";
 import { WindowBar } from "../ui/WindowBar";
 
-const resumePath = "/RaileyDelaPena.pdf";
+
 
 type PortfolioCliProps = {
   profile: PortfolioData["profile"];
@@ -12,7 +12,7 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
   const [command, setCommand] = useState("");
   const [history, setHistory] = useState<string[]>([
     `Welcome, I am ${profile.name}.`,
-    "This shell is a quick way to open my resume and profiles.",
+    "This shell is a quick way to open my public profiles.",
     "Run `help` to see available commands.",
   ]);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -42,24 +42,11 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
     const actions: Record<string, () => string[]> = {
       help: () => [
         "Available commands:",
-        "view\tOpen my resume in a new tab",
-        "download\tDownload my resume as a PDF",
         "github\tOpen my GitHub profile",
         "linkedin\tOpen my LinkedIn profile",
         "email\tCompose an email to me",
         "clear\tClear this terminal",
       ],
-      view: () => {
-        window.open(resumePath, "_blank", "noopener,noreferrer");
-        return ["Opening resume in a new tab."];
-      },
-      download: () => {
-        const link = document.createElement("a");
-        link.href = resumePath;
-        link.download = "RaileyDelaPena.pdf";
-        link.click();
-        return ["Preparing resume download: RaileyDelaPeña.pdf"];
-      },
       github: () => {
         window.open(githubUrl, "_blank", "noopener,noreferrer");
         return [`Opening GitHub: ${githubUrl}`];
@@ -128,7 +115,7 @@ export function PortfolioCli({ profile }: PortfolioCliProps) {
 
   return (
     <article
-      id="resume-cli"
+      id="portfolio-cli"
       className="cli-panel"
       aria-label="Portfolio command line"
       onClick={() => inputRef.current?.focus()}

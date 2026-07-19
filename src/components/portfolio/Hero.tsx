@@ -54,10 +54,6 @@ export function Hero({ portfolio }: HeroProps) {
                 <span>{social.label}</span>
               </a>
             ))}
-            <Link className="social-link" to="/about#resume-cli" aria-label="Open resume command line">
-              <SocialIcon label="Resume" />
-              <span>Resume</span>
-            </Link>
           </div>
 
           <div className="mt-10 grid gap-3 sm:grid-cols-3">
